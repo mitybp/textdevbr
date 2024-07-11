@@ -1,0 +1,32 @@
+{
+  "name": "textdevbr",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@phosphor-icons/react": "^2.1.7",
+    "firebase": "^10.12.3",
+    "js-cookie": "^3.0.5",
+    "marked": "^11.2.0",
+    "marked-alert": "^2.0.1",
+    "marked-base-url": "^1.1.4",
+    "marked-bidi": "^1.0.10",
+    "marked-code-format": "^1.1.5",
+    "marked-custom-heading-id": "^2.0.8",
+    "marked-emoji": "^1.4.1",
+    "marked-extended-tables": "^1.0.8",
+    "next": "14.2.5",
+    "prettier": "^3.3.2",
+    "react": "^18",
+    "react-dom": "^18"
+  },
+  "devDependencies": {
+    "eslint": "^8",
+    "eslint-config-next": "14.2.5"
+  }
+}
