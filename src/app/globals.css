@@ -304,7 +304,7 @@ section.form {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 4px;
+        gap: 6px;
         border: 1px solid var(--gray);
         border-radius: 15px;
         height: 30px;

@@ -123,8 +123,8 @@ export default function ProfileEdit() {
             <Image src={photoURL} width={100} height={100} alt="Foto de perfil" className="profile-img" />
           )}
           <label htmlFor="photo">
-            <UploadSimple />
             Upload
+            <UploadSimple />
           </label>
           <input
             accept="image/*"
