@@ -41,7 +41,7 @@ export default function Layout({ children }) {
             email: u.email,
             emailVerified: u.emailVerified,
             joinedAt: Timestamp.now(),
-            name: user.displayName
+            name: user.displayName,
             username: strFormat(user.displayName),
             photoURL: u.photoURL,
             uid: u.uid,

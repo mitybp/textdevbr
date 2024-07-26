@@ -34,7 +34,7 @@ export default function Login() {
           email: user.email,
           emailVerified: user.emailVerified,
           joinedAt: Timestamp.now(),
-          name: user.displayName
+          name: user.displayName,
           username: strFormat(user.displayName),
           photoURL: user.photoURL,
           uid: user.uid,
@@ -66,7 +66,7 @@ export default function Login() {
       setLoading(false);
     }
   };
-  
+
   const strFormat = (str) => {
     return str
       .normalize("NFD")
