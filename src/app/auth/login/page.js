@@ -34,7 +34,8 @@ export default function Login() {
           email: user.email,
           emailVerified: user.emailVerified,
           joinedAt: Timestamp.now(),
-          username: user.displayName,
+          name: user.displayName
+          username: strFormat(user.displayName),
           photoURL: user.photoURL,
           uid: user.uid,
           website: "",
@@ -64,6 +65,21 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
+  };
+  
+  const strFormat = (str) => {
+    return str
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replaceAll(" ", "-")
+      .toLowerCase()
+      .replaceAll("?", "")
+      .replaceAll("!", "")
+      .replaceAll("°", "")
+      .replaceAll(",", "")
+      .replaceAll(" - ", "-")
+      .replaceAll(".", "-")
+      .replaceAll("#", "");
   };
 
   return (

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { auth, db } from "@/firebase";
+import { db } from "@/firebase";
 import {
   doc,
   getDoc,
@@ -12,7 +12,6 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { marked } from "marked";
-import { onAuthStateChanged } from "firebase/auth";
 import {
   DotsThreeCircleVertical,
   Link,
@@ -31,7 +30,6 @@ const extendedTables = require("marked-extended-tables");
 
 const PostPage = ({ params }) => {
   const router = useRouter();
-  const [user, setUser] = useState(null);
   const { username, post_path } = params;
   const [postData, setPostData] = useState(null);
   const [authorData, setAuthorData] = useState(null);
@@ -39,33 +37,6 @@ const PostPage = ({ params }) => {
   const [emojis, setEmojis] = useState(null);
 
   useEffect(() => {
-    const signIn = onAuthStateChanged(auth, async (u) => {
-      if (u) {
-        const docRef = doc(db, "users", u.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setUser(docSnap.data());
-        } else {
-          const userData = {
-            description: "",
-            email: u.email,
-            emailVerified: u.emailVerified,
-            joinedAt: Timestamp.now(),
-            username: u.displayName,
-            photoURL: u.photoURL,
-            uid: u.uid,
-            website: "",
-          };
-          await setDoc(docRef, userData);
-          setUser(userData);
-        }
-      } else {
-        setUser(null);
-        toast.error("Você precisa fazer login para criar uma postagem!");
-        router.push("/");
-      }
-    });
-
     const fetchPostData = async () => {
       if (username && post_path) {
         const postRef = query(
@@ -121,7 +92,6 @@ const PostPage = ({ params }) => {
     };
 
     fetchPostData();
-    return () => signIn();
   }, [username, post_path, router]);
 
   const formatTimestamp = (timestamp) => {

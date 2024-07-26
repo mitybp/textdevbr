@@ -112,7 +112,7 @@ export default function UserPage({ params }) {
         <section className="user_info">
           <div>
             <Image src={user.photoURL} width={100} height={100} alt="user photo" />
-            <h1>{user.username}</h1>
+            <h1>{user.name}</h1>
             <div dangerouslySetInnerHTML={{ __html: description }}></div>
             <p className="website">
               <Link />
@@ -153,12 +153,12 @@ export default function UserPage({ params }) {
             posts.map((post) => (
               <div className="post" key={post.id}>
                 <h3>
-                  <a href={`/${user.username}/${post.path}`}>
+                  <a href={`/${params.username}/${post.path}`}>
                     {post.title}
                   </a>
                 </h3>
                 <p>
-                  <a href={`/${user.username}`}>{user.username}</a> •{" "}
+                  <a href={`/${params.username}`}>{user.name}</a> •{" "}
                   {formatTimestamp(post.date)}
                 </p>
               </div>

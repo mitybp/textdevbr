@@ -85,7 +85,7 @@ export default function Home() {
         for (const post of querySnapshot.docs) {
           const authorDocRef = doc(db, "users", post.data().author);
           const authorDoc = await getDoc(authorDocRef);
-          const authorName = authorDoc.data().username;
+          const authorName = {username: authorDoc.data().username, name: authorDoc.data().name};
           posts.push({ ...post.data(), id: post.id, authorName: authorName });
         }
 
@@ -179,12 +179,12 @@ export default function Home() {
           posts.map((post) => (
             <div className="post" key={post.id}>
               <h3>
-                <a href={`/${post.authorName}/${post.path}`}>
+                <a href={`/${post.authorName.username}/${post.path}`}>
                   {post.title}
                 </a>
               </h3>
               <p>
-                <a href={`/${post.authorName}`}>{post.authorName}</a> •{" "}
+                <a href={`/${post.authorName.username}`}>{post.authorName.name}</a> •{" "}
                 {formatTimestamp(post.date)}
               </p>
             </div>

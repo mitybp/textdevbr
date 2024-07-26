@@ -18,7 +18,7 @@ export default function ProfileEdit() {
   const [user, setUser] = useState(null);
   const [description, setDescription] = useState(``);
   const [website, setWebsite] = useState("");
-  const [username, setUsername] = useState("");
+  const [name, setName] = useState("");
   const [photoURL, setPhotoURL] = useState("");
   const router = useRouter();
 
@@ -33,7 +33,7 @@ export default function ProfileEdit() {
             setUser(temp_user);
             setDescription(temp_user.description || "");
             setWebsite(temp_user.website || "");
-            setUsername(temp_user.username || "");
+            setName(temp_user.username || "");
             setPhotoURL(temp_user.photoURL || "");
           } else {
             const userData = {
@@ -41,7 +41,8 @@ export default function ProfileEdit() {
               email: u.email,
               emailVerified: u.emailVerified,
               joinedAt: Timestamp.now(),
-              username: u.displayName,
+              name: user.displayName
+              username: strFormat(user.displayName),
               photoURL: u.photoURL,
               uid: u.uid,
               website: "",
@@ -50,7 +51,7 @@ export default function ProfileEdit() {
             setUser(userData);
             setDescription("");
             setWebsite("");
-            setUsername(u.displayName || "");
+            setName(u.displayName || "");
             setPhotoURL(u.photoURL || "");
           }
         } else {
@@ -70,11 +71,12 @@ export default function ProfileEdit() {
         await updateDoc(userDocRef, {
           description: description.replaceAll("\n", '<br/>'),
           website,
-          username,
+          name,
+          username: strFormat(name),
           photoURL,
         });
         await updateProfile(auth.currentUser, {
-          displayName: username,
+          displayName: name,
           photoURL,
         });
         toast.success("Perfil atualizado com sucesso!");
@@ -138,8 +140,8 @@ export default function ProfileEdit() {
             <input
               type="text"
               id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder="Nome de Usuário"
             />
           </div>
