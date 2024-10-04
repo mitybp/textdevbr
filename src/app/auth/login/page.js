@@ -1,16 +1,15 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { auth, db, googleProvider } from "@/firebase";
-import { signInWithPopup, signInWithEmailAndPassword } from "firebase/auth";
-import toast from "react-hot-toast";
-import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
+import { Eye, EyeClosed, GoogleLogo } from "@phosphor-icons/react";
 import {
-  Eye,
-  EyeClosed,
-  GoogleLogo,
-  QuestionMark,
-} from "@phosphor-icons/react";
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+} from "firebase/auth";
+import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import toast from "react-hot-toast";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -18,6 +17,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [pwVisible, setPwVisible] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const handleGoogleLogin = async () => {
     try {
@@ -34,17 +34,21 @@ export default function Login() {
           email: user.email,
           emailVerified: user.emailVerified,
           joinedAt: Timestamp.now(),
-          name: user.displayName,
-          username: strFormat(user.displayName),
+          name: user.displayName || user.email.split("@")[0],
+          username: formatUsername(
+            user.displayName || user.email.split("@")[0]
+          ),
           photoURL: user.photoURL,
           uid: user.uid,
           website: "",
+          github: "",
+          savedPosts: [],
         };
         await setDoc(docRef, userData);
       }
 
       toast.success("Login com Google realizado com sucesso!");
-      router.push("/");
+      router.push(searchParams.get("redirect") || "/");
     } catch (error) {
       toast.error("Erro ao fazer login com Google.");
       console.error("Erro ao fazer login com Google:", error);
@@ -54,43 +58,79 @@ export default function Login() {
   };
 
   const handleEmailLogin = async () => {
+    if (!email || !password) {
+      toast.error("Por favor, preencha todos os campos.");
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      toast.error("Email inválido.");
+      return;
+    }
+
     try {
       setLoading(true);
       await signInWithEmailAndPassword(auth, email, password);
       toast.success("Login realizado com sucesso!");
-      router.push("/");
+      router.push(searchParams.get("redirect") || "/");
     } catch (error) {
-      toast.error("Erro ao fazer login com email e senha.");
-      console.error("Erro ao fazer login com email e senha:", error);
+      if (error.code === "auth/user-not-found") {
+        try {
+          const userCredential = await createUserWithEmailAndPassword(
+            auth,
+            email,
+            password
+          );
+          const user = userCredential.user;
+
+          const docRef = doc(db, "users", user.uid);
+          const userData = {
+            description: "",
+            email: user.email,
+            emailVerified: user.emailVerified,
+            joinedAt: Timestamp.now(),
+            name: user.displayName,
+            username: formatUsername(user.displayName),
+            photoURL: null,
+            uid: user.uid,
+            website: "",
+            github: "",
+            savedPosts: [],
+          };
+          await setDoc(docRef, userData);
+
+          toast.success("Conta criada e login realizado com sucesso!");
+          router.push(searchParams.get("redirect") || "/");
+        } catch (creationError) {
+          toast.error("Erro ao criar conta.");
+          console.error("Erro ao criar conta:", creationError);
+        }
+      } else {
+        toast.error("Erro ao fazer login.");
+        console.error("Erro ao fazer login:", error);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const strFormat = (str) => {
-    return str
+  const formatUsername = (name) => {
+    return name
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
-      .replaceAll(" ", "-")
+      .replace(/\s+/g, "-")
       .toLowerCase()
-      .replaceAll("?", "")
-      .replaceAll("!", "")
-      .replaceAll("°", "")
-      .replaceAll(",", "")
-      .replaceAll(" - ", "-")
-      .replaceAll(".", "-")
-      .replaceAll("#", "");
+      .replace(/[!?°,°#]/g, "");
   };
 
   return (
     <section className="form">
       <h1>Login</h1>
       <button
-        onClick={handleGoogleLogin}
+        onClick={() => handleGoogleLogin("google")}
         disabled={loading}
-        className="icon-label"
+        className="icon-label active"
       >
-        Entrar com Google
+        Continuar com Google
         <GoogleLogo />
       </button>
       <hr />
@@ -124,9 +164,10 @@ export default function Login() {
           Entrar
         </button>
 
-        <a href="/auth/reset-password/">
-          Esqueceu sua senha?
-        </a>
+        <div>
+          <a href="/auth/reset-password/">Esqueceu sua senha?</a>
+          <a href="/auth/recover-email/">Esqueceu o email?</a>
+        </div>
       </div>
     </section>
   );

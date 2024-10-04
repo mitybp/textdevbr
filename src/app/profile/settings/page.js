@@ -1,26 +1,32 @@
 "use client";
-import {ArrowSquareOut} from "@phosphor-icons/react";
 
-export default function ProfileSettings(){
-  return(
+import { useEffect } from "react";
+
+export default function ProfileSettings() {
+  useEffect(()=>{
+    document.title = "Configurações - text.dev.br";
+  })
+  return (
     <>
       <h1>Configurações</h1>
       <section className="form">
         <div>
-          <p>Redefinir senha</p>
-          <a className="btn icon-label">
+          <a href="/auth/reset-password" className="btn icon-label">
             Redefinir senha
-            <ArrowSquareOut/>
           </a>
-        </div>
-        <div>
-          <p>Deletar conta</p>
-          <a className="btn icon-label danger">
+          <a href="/auth/recover-email" className="btn icon-label">
+            Recuperar e-mail
+          </a>
+          <hr/>
+          <a href="/auth/delete-posts" className="btn icon-label danger active">
+            Deletar postagens
+          </a>
+          <hr/>
+          <a href="/auth/delete-account" className="btn icon-label danger active">
             Deletar conta
-            <ArrowSquareOut/>
           </a>
         </div>
       </section>
     </>
-  )
+  );
 }

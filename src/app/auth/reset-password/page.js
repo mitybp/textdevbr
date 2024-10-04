@@ -10,12 +10,29 @@ export default function ResetPassword() {
   const [email, setEmail] = useState("");
 
   const handleResetPassword = async () => {
+    if (!email) {
+      toast.error("Por favor, insira seu e-mail.");
+      return;
+    }
+    
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      toast.error("E-mail inválido.");
+      return;
+    }
+
     try {
       await sendPasswordResetEmail(auth, email);
       toast.success("Email enviado com sucesso!");
       router.push("/auth/login");
     } catch (error) {
-      toast.error("Erro ao enviar email!");
+      let errorMessage = "Erro ao enviar email!";
+      if (error.code === 'auth/invalid-email') {
+        errorMessage = "E-mail inválido.";
+      } else if (error.code === 'auth/user-not-found') {
+        errorMessage = "Usuário não encontrado.";
+      }
+      toast.error(errorMessage);
+      console.error("Erro ao enviar email:", error);
     }
   };
 
@@ -32,6 +49,7 @@ export default function ResetPassword() {
             required
           />
         </div>
+        <a href="/auth/recover-email">Esqueceu o e-mail?</a>
       </div>
       <div className="buttons">
         <a href="/auth/login" className="btn">

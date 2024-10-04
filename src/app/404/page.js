@@ -1,5 +1,3 @@
-import React from 'react'
-
 const Error404 = () => {
   return (
     <section className='error'>

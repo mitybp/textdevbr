@@ -1,23 +1,43 @@
 "use client";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/firebase";
-import { deleteUser } from "firebase/auth";
+import { deleteUser, signOut } from "firebase/auth";
 import toast from "react-hot-toast";
 import { deleteDoc, doc } from "firebase/firestore";
 
 export default function DeleteAccount() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
   const handleDeleteAccount = async () => {
     if (auth.currentUser) {
+      setLoading(true);
       try {
         let user = auth.currentUser;
+
+        // Excluir os dados do Firestore
         await deleteDoc(doc(db, "users", user.uid));
+
+        // Excluir o usuário do Firebase Authentication
         await deleteUser(user);
+
         toast.success("Usuário deletado com sucesso!");
+
+        // Deslogar o usuário após a deleção
+        await signOut(auth);
+
         router.push("/");
       } catch (error) {
-        toast.error("Erro ao deletar conta! Tente fazer login novamente.");
+        // Autenticação recente pode ser necessária
+        if (error.code === "auth/requires-recent-login") {
+          toast.error("Autenticação recente necessária. Por favor, faça login novamente.");
+          router.push("/auth/login");
+        } else {
+          toast.error("Erro ao deletar conta! Tente novamente mais tarde.");
+        }
+      } finally {
+        setLoading(false);
       }
     } else {
       toast.error("Você precisa fazer login para deletar sua conta!");
@@ -32,11 +52,17 @@ export default function DeleteAccount() {
         É uma pena que você esteja nos deixando, sentimos muito por não poder
         atender o que você desejava.
       </p>
+      <p>
+        Caso queira deixar sua opinião, envie-nos um e-mail:{" "}
+        <a href="mailto:contact@text.dev.br" type="mail">contact@text.dev.br</a>
+      </p>
       <div className="buttons">
         <a href="/" className="btn active">
           Cancelar
         </a>
-        <button onClick={handleDeleteAccount}>Deletar conta</button>
+        <button onClick={handleDeleteAccount} disabled={loading}>
+          {loading ? "Deletando..." : "Deletar conta"}
+        </button>
       </div>
     </section>
   );

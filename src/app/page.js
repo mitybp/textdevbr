@@ -1,196 +1,335 @@
 "use client";
+
 import { auth, db } from "@/firebase";
-import { ArrowUp, MagnifyingGlass } from "@phosphor-icons/react";
+import {
+  AmazonLogo,
+  AndroidLogo,
+  AppWindow,
+  ArrowDown,
+  ArrowUpRight,
+  Brain,
+  Chats,
+  Cloud,
+  Code,
+  Coffee,
+  Database,
+  Desktop,
+  DeviceMobile,
+  DotOutline,
+  FileC,
+  FileCSharp,
+  FileCss,
+  FileHtml,
+  FileJs,
+  FileJsx,
+  FilePy,
+  FileTs,
+  FolderOpen,
+  FunnelSimple,
+  GitBranch,
+  GithubLogo,
+  Hexagon,
+  LinuxLogo,
+  MagnifyingGlass,
+  Network,
+  Newspaper,
+  Robot,
+  Rows,
+  Shield,
+  Steps,
+  SuitcaseSimple,
+  TagSimple,
+  TestTube,
+  TextAa,
+  Video,
+} from "@phosphor-icons/react";
 import { onAuthStateChanged } from "firebase/auth";
 import {
-  Timestamp,
   collection,
   doc,
+  endAt,
   getDoc,
   getDocs,
+  limit,
   orderBy,
   query,
-  setDoc,
+  startAfter,
   startAt,
-  endAt,
+  where,
 } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import Cookies from "js-cookie";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import PostCard from "./components/PostCard";
+import TagList from "./components/TagList";
 
 export default function Home() {
-  const [posts, setPosts] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [likedPosts, setLikedPosts] = useState(new Set());
+  const [savedPosts, setSavedPosts] = useState(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [order, setOrder] = useState("desc");
+  const [loading, setLoading] = useState(false);
+  const [totalPosts, setTotalPosts] = useState(0);
+  const [postsLimit, setPostsLimit] = useState(50);
+  const [filterTags, setFilterTags] = useState([]);
+
+  const searchParams = useSearchParams();
+  const currentPage = searchParams.get("page")
+    ? parseInt(searchParams.get("page"))
+    : 1;
+
+  const postsLimitRef = useRef(null);
+  const tagsRef = useRef(null);
+  const filtersRef = useRef(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      if (u) {
-        const docRef = doc(db, "users", u.uid);
-        const docSnap = await getDoc(docRef);
-        if (!docSnap.exists()) {
-          const userData = {
-            description: "",
-            email: u.email,
-            emailVerified: u.emailVerified,
-            joinedAt: Timestamp.now(),
-            username: u.displayName,
-            photoURL: u.photoURL,
-            uid: u.uid,
-            website: "",
-          };
-          await setDoc(docRef, userData);
-        }
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        await fetchUserData(user);
       }
     });
-
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    fetchPosts();
-  }, [order, db]);
+    fetchPosts(currentPage);
+  }, [order, currentPage]);
 
-  const fetchPosts = async () => {
+  const fetchUserData = async (user) => {
     try {
-      let q = query(collection(db, "posts"), orderBy("date", order));
-      const querySnapshot = await getDocs(q);
-      const posts = [];
-
-      for (const post of querySnapshot.docs) {
-        const authorDocRef = doc(db, "users", post.data().author);
-        const authorDoc = await getDoc(authorDocRef);
-        const authorName = authorDoc.data().username;
-        posts.push({ ...post.data(), id: post.id, authorName: authorName });
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        setSavedPosts(new Set(userData.savedPosts || []));
+        setLikedPosts(new Set(userData.likedPosts || []));
+        Cookies.set("user", JSON.stringify(userData), { expires: 7 });
       }
+    } catch (error) {
+      toast.error("Erro ao carregar dados do usuário");
+      console.error("Erro ao carregar dados do usuário:", error);
+    }
+  };
 
-      setPosts(posts);
+  const fetchPosts = async (page = 1, psLimit = 50) => {
+    setLoading(true);
+    try {
+      const q = buildPostsQuery(psLimit);
+      const querySnapshot = await getDocs(getPaginatedQuery(q, page));
+      const fetchedPosts = await mapPosts(querySnapshot);
+      setPosts(fetchedPosts);
+
+      const totalSnapshot = await getDocs(collection(db, "posts"));
+      setTotalPosts(totalSnapshot.size);
     } catch (error) {
       toast.error("Erro ao buscar postagens!");
       console.error("Erro ao buscar postagens:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const buildPostsQuery = (psLimit) => {
+    if (filterTags.length === 0) {
+      return query(
+        collection(db, "posts"),
+        orderBy("date", order),
+        limit(psLimit)
+      );
+    } else {
+      return query(
+        collection(db, "posts"),
+        where("tags", "array-contains-any", filterTags),
+        orderBy("date", order),
+        limit(psLimit)
+      );
+    }
+  };
+
+  const getPaginatedQuery = (q, page) => {
+    if (page > 1 && posts.length > 0) {
+      const lastPost = posts[posts.length - 1];
+      const lastPostDoc = doc(db, "posts", lastPost.id);
+      return query(q, startAfter(lastPostDoc));
+    }
+    return q;
+  };
+
+  const mapPosts = async (querySnapshot) => {
+    const tempPosts = [];
+    for (const post of querySnapshot.docs) {
+      const postData = post.data();
+      const authorData = await fetchAuthorData(postData.author);
+      tempPosts.push({ ...postData, id: post.id, author: authorData });
+    }
+    return tempPosts;
+  };
+
+  const fetchAuthorData = async (authorUid) => {
+    try {
+      const authorDoc = await getDoc(doc(db, "users", authorUid));
+      if (authorDoc.exists()) {
+        const authorData = authorDoc.data();
+        return {
+          username: authorData.username || "Desconhecido",
+          name: authorData.name || "Nome não fornecido",
+          uid: authorData.uid,
+          photoURL:
+            authorData.photoURL ||
+            `https://eu.ui-avatars.com/api/?name=${authorData.name.replaceAll(" ", "+")}&size=250`,
+        };
+      }
+      return {};
+    } catch (error) {
+      console.error("Erro ao buscar dados do autor:", error);
+      return {}; // Retorna um objeto vazio em caso de erro
     }
   };
 
   const handleSearch = async () => {
     if (searchTerm) {
-      try {
-        const q = query(
-          collection(db, "posts"),
-          orderBy("title"),
-          startAt(searchTerm),
-          endAt(searchTerm + "\uf8ff")
-        );
-        const querySnapshot = await getDocs(q);
-        const posts = [];
-
-        for (const post of querySnapshot.docs) {
-          const authorDocRef = doc(db, "users", post.data().author);
-          const authorDoc = await getDoc(authorDocRef);
-          const authorName = {username: authorDoc.data().username, name: authorDoc.data().name};
-          posts.push({ ...post.data(), id: post.id, authorName: authorName });
-        }
-
-        setPosts(posts);
-      } catch (error) {
-        toast.error("Erro ao buscar postagens!");
-        console.error("Erro ao buscar postagens:", error);
-      }
+      await searchPosts();
     } else {
-      fetchPosts();
+      await fetchPosts();
     }
   };
 
-  const formatTimestamp = (timestamp) => {
-    if (timestamp) {
-      const now = new Date();
-      const date = timestamp.toDate();
-
-      const diff = now - date;
-
-      const diffInMinutes = Math.floor(diff / (1000 * 60));
-      const diffInHours = Math.floor(diff / (1000 * 60 * 60));
-      const diffInDays = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-      if (diffInDays >= 2) {
-        return `${date.getDate().toString().padStart(2, "0")}/${(
-          date.getMonth() + 1
-        )
-          .toString()
-          .padStart(2, "0")}/${date.getFullYear()} - ${date
-          .getHours()
-          .toString()
-          .padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
-      } else if (diffInDays >= 1) {
-        return `${diffInDays} ${diffInDays === 1 ? "dia" : "dias"} atrás`;
-      } else if (diffInHours >= 1) {
-        return `${diffInHours} ${diffInHours === 1 ? "hora" : "horas"} atrás`;
-      } else {
-        return `${diffInMinutes} ${
-          diffInMinutes === 1 ? "minuto" : "minutos"
-        } atrás`;
-      }
-    } else {
-      return "";
+  const searchPosts = async () => {
+    setLoading(true);
+    try {
+      const q = query(
+        collection(db, "posts"),
+        orderBy("titleLowerCase"),
+        startAt(searchTerm.toLowerCase()),
+        endAt(searchTerm.toLowerCase() + "\uf8ff")
+      );
+      const querySnapshot = await getDocs(q);
+      const searchedPosts = await mapPosts(querySnapshot);
+      setPosts(searchedPosts);
+    } catch (error) {
+      toast.error("Erro ao buscar postagens!");
+      console.error("Erro ao buscar postagens:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const strFormat = (str) => {
-    return str
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replaceAll(" ", "-")
-      .toLowerCase()
-      .replaceAll("?", "")
-      .replaceAll("!", "")
-      .replaceAll("°", "")
-      .replaceAll(",", "")
-      .replaceAll(" - ", "-")
-      .replaceAll(".", "-")
-      .replaceAll("#", "");
+  const toggleTag = (tag) => {
+    setFilterTags((prevTags) =>
+      prevTags.includes(tag)
+        ? prevTags.filter((t) => t !== tag)
+        : [...prevTags, tag]
+    );
   };
 
-  if (!posts) {
-    return <div>Carregando...</div>;
-  }
+  const filterTagsValues = [
+    { name: "webdev", icon: <Desktop /> },
+    { name: "js", icon: <FileJs /> },
+    { name: "beginners", icon: <Steps /> },
+    { name: "tutorial", icon: <Video /> },
+    { name: "react", icon: <FileJsx /> },
+    { name: "python", icon: <FilePy /> },
+    { name: "ai", icon: <Robot /> },
+    { name: "productivity", icon: <ArrowUpRight /> },
+    { name: "opensource", icon: <FolderOpen /> },
+    { name: "aws", icon: <AmazonLogo /> },
+    { name: "css", icon: <FileCss /> },
+    { name: "node", icon: <Hexagon /> },
+    { name: "java", icon: <Coffee /> },
+    { name: "learning", icon: <Brain /> },
+    { name: "typescript", icon: <FileTs /> },
+    { name: "news", icon: <Newspaper /> },
+    { name: "career", icon: <SuitcaseSimple /> },
+    { name: "db", icon: <Database /> },
+    { name: "discuss", icon: <Chats /> },
+    { name: "android", icon: <AndroidLogo /> },
+    { name: "dotnet", icon: <DotOutline /> },
+    { name: "cloud", icon: <Cloud /> },
+    { name: "html", icon: <FileHtml /> },
+    { name: "security", icon: <Shield /> },
+    { name: "frontend", icon: <TextAa /> },
+    { name: "backend", icon: <Code /> },
+    { name: "github", icon: <GithubLogo /> },
+    { name: "testing", icon: <TestTube /> },
+    { name: "csharp", icon: <FileCSharp /> },
+    { name: "c", icon: <FileC /> },
+    { name: "api", icon: <Network /> },
+    { name: "mobile", icon: <DeviceMobile /> },
+    { name: "app", icon: <AppWindow /> },
+    { name: "linux", icon: <LinuxLogo /> },
+    { name: "git", icon: <GitBranch /> },
+  ];
+
+  const orderedTags = filterTagsValues.sort((a, b) =>
+    filterTags.includes(a.name) && !filterTags.includes(b.name) ? -1 : 1
+  );
 
   return (
     <>
       <section className="search">
-        <button
-          onClick={() => setOrder(order === "desc" ? "asc" : "desc")}
-          className={`icon ${order === "asc" && "rotate"}`}
-        >
-          <ArrowUp />
-        </button>
         <input
           type="text"
           placeholder="Pesquisar"
-          defaultValue={searchTerm}
+          value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <button className="icon" onClick={handleSearch}>
+        <button onClick={handleSearch} className="icon">
           <MagnifyingGlass />
         </button>
+        <details className="md" ref={filtersRef}>
+          <summary>
+            <FunnelSimple />
+          </summary>
+          <div className="left">
+            <button
+              onClick={() => setOrder(order === "asc" ? "desc" : "asc")}
+              className="icon-label"
+            >
+              Mais {order === "asc" ? "antigo" : "novo"}
+              <ArrowDown style={{ rotate: order === "asc" ? 0 : 180 }} />
+            </button>
+            <details className="md" ref={postsLimitRef}>
+              <summary className="icon-label">
+                N° de postagens
+                <Rows />
+              </summary>
+              <div className="inside">
+                {[10, 25, 50, 100].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setPostsLimit(n)}
+                    disabled={n === postsLimit}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </details>
+            <TagList
+              tagsRef={tagsRef}
+              tags={filterTagsValues}
+              selectedTags={filterTags}
+              onToggleTag={toggleTag}
+            />
+          </div>
+        </details>
       </section>
-      <hr />
-      <section className="list">
-        {posts && posts.length === 0 ? (
-          <p>Não há postagens ainda.</p>
-        ) : (
-          posts.map((post) => (
-            <div className="post" key={post.id}>
-              <h3>
-                <a href={`/${post.authorName.username}/${post.path}`}>
-                  {post.title}
-                </a>
-              </h3>
-              <p>
-                <a href={`/${post.authorName.username}`}>{post.authorName.name}</a> •{" "}
-                {formatTimestamp(post.date)}
-              </p>
-            </div>
-          ))
-        )}
-      </section>
+      <div className="posts">
+        {loading && <p>Carregando...</p>}
+        {!loading && posts.length === 0 && <p>Nenhum post encontrado</p>}
+        {posts.map((post) => (
+          <PostCard
+            key={post.id}
+            post={post}
+            author={post.author}
+            liked={likedPosts}
+            saved={savedPosts}
+            setLikedPosts={setLikedPosts}
+            setSavedPosts={setSavedPosts}
+          />
+        ))}
+      </div>
     </>
   );
 }

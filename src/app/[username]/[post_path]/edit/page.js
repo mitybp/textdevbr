@@ -1,47 +1,16 @@
 "use client";
 import { auth, db } from "@/firebase";
 import {
-  AmazonLogo,
-  AndroidLogo,
-  AppWindow,
-  ArrowUpRight,
   BracketsCurly,
-  Brain,
-  Chats,
-  Cloud,
+  CheckSquare,
   Code,
-  Database,
-  Desktop,
-  DeviceMobile,
-  DotOutline,
-  Eye,
-  FileC,
-  FileCSharp,
-  FileCss,
-  FileHtml,
-  FileJs,
-  FileJsx,
-  FilePy,
-  FileTs,
-  FolderOpen,
-  GitBranch,
-  GithubLogo,
-  Hexagon,
   Image,
   Link,
-  LinuxLogo,
   ListBullets,
   ListNumbers,
-  Network,
-  Newspaper,
+  Pencil,
   Quotes,
-  Robot,
-  Shield,
-  Steps,
-  SuitcaseSimple,
   Table,
-  TestTube,
-  TextAa,
   TextB,
   TextH,
   TextHFive,
@@ -52,121 +21,58 @@ import {
   TextHTwo,
   TextItalic,
   TextStrikethrough,
-  Video,
-  Coffee,
-  TagSimple,
-  Pencil,
+  Eye,
 } from "@phosphor-icons/react";
 import { onAuthStateChanged } from "firebase/auth";
 import {
-  addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
+  getDocs,
+  query,
   setDoc,
-  Timestamp,
+  updateDoc,
+  where,
 } from "firebase/firestore";
 import hljs from "highlight.js";
 import { marked } from "marked";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
-const New = () => {
+const EditPost = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [source, setSource] = useState("");
   const [user, setUser] = useState(null);
+  const [post, setPost] = useState(null);
   const [tabIsPreview, setTabIsPreview] = useState(false);
-  const [selectedTags, setSelectedTags] = useState([]);
   const router = useRouter();
+  const { username, post_path } = useParams();
   const headingRef = useRef(null);
-  const tagsRef = useRef(null);
-
-  const toggleTag = (tag) => {
-    if (selectedTags.includes(tag)) {
-      setSelectedTags(selectedTags.filter((t) => t !== tag));
-    } else {
-      setSelectedTags([...selectedTags, tag]);
-    }
-  };
-
-  const tagsValues = [
-    { name: "webdev", icon: <Desktop /> },
-    { name: "js", icon: <FileJs /> },
-    { name: "beginners", icon: <Steps /> },
-    { name: "tutorial", icon: <Video /> },
-    { name: "react", icon: <FileJsx /> },
-    { name: "python", icon: <FilePy /> },
-    { name: "ai", icon: <Robot /> },
-    { name: "productivity", icon: <ArrowUpRight /> },
-    { name: "opensource", icon: <FolderOpen /> },
-    { name: "aws", icon: <AmazonLogo /> },
-    { name: "css", icon: <FileCss /> },
-    { name: "node", icon: <Hexagon /> },
-    { name: "java", icon: <Coffee /> },
-    { name: "learning", icon: <Brain /> },
-    { name: "typescript", icon: <FileTs /> },
-    { name: "news", icon: <Newspaper /> },
-    { name: "career", icon: <SuitcaseSimple /> },
-    { name: "db", icon: <Database /> },
-    { name: "discuss", icon: <Chats /> },
-    { name: "android", icon: <AndroidLogo /> },
-    { name: "dotnet", icon: <DotOutline /> },
-    { name: "cloud", icon: <Cloud /> },
-    { name: "html", icon: <FileHtml /> },
-    { name: "security", icon: <Shield /> },
-    { name: "frontend", icon: <TextAa /> },
-    { name: "backend", icon: <Code /> },
-    { name: "github", icon: <GithubLogo /> },
-    { name: "testing", icon: <TestTube /> },
-    { name: "csharp", icon: <FileCSharp /> },
-    { name: "c", icon: <FileC /> },
-    { name: "api", icon: <Network /> },
-    { name: "mobile", icon: <DeviceMobile /> },
-    { name: "app", icon: <AppWindow /> },
-    { name: "linux", icon: <LinuxLogo /> },
-    { name: "git", icon: <GitBranch /> },
-  ];
-
-  const orderedTags = [...tagsValues].sort((a, b) => {
-    if (selectedTags.includes(a.name) && !selectedTags.includes(b.name))
-      return -1;
-    if (!selectedTags.includes(a.name) && selectedTags.includes(b.name))
-      return 1;
-    return tagsValues.indexOf(a) - tagsValues.indexOf(b);
-  });
-
-  const renderer = new marked.Renderer();
 
   useEffect(() => {
-    document.title = "Criar nova postagem - text.dev.br";
-
     const handleClickOutside = (event) => {
       if (headingRef.current && !headingRef.current.contains(event.target)) {
         headingRef.current.removeAttribute("open");
-      }
-      if (tagsRef.current && !tagsRef.current.contains(event.target)) {
-        tagsRef.current.removeAttribute("open");
       }
     };
     document.addEventListener("click", handleClickOutside);
     return () => {
       document.removeEventListener("click", handleClickOutside);
     };
-  }, []);
+  });
+
+  const renderer = new marked.Renderer();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
         const userDocRef = doc(db, "users", u.uid);
         const userDocSnap = await getDoc(userDocRef);
-
-        let temp_user = null;
-
         if (userDocSnap.exists()) {
-          temp_user = userDocSnap.data();
-          setUser(temp_user);
+          setUser(userDocSnap.data());
         } else {
           const userData = {
             description: "",
@@ -174,38 +80,64 @@ const New = () => {
             emailVerified: u.emailVerified,
             joinedAt: Timestamp.now(),
             name: u.displayName,
-            username: user.username,
+            username: formatUsername(u.displayName),
             photoURL: u.photoURL,
             uid: u.uid,
             website: "",
-            social: {
-              github: "",
-              instagram: "",
-              facebook: "",
-              twitter: "",
-              threads: "",
-              whatsapp: "",
-            },
+            github: "",
             savedPosts: [],
           };
-
           await setDoc(userDocRef, userData);
-          temp_user = userData;
-          setUser(temp_user);
+          setUser(userData);
         }
       } else {
-        router.push("/auth/login");
-        toast.error("Faça login para criar uma postagem.");
+        setUser(null);
+        toast.error("Você precisa fazer login para editar uma postagem!");
+        router.push("/");
       }
     });
 
     return () => unsubscribe();
   }, [router]);
 
+  useEffect(() => {
+    if (user) {
+      const fetchPost = async () => {
+        try {
+          const postDocQuery = query(
+            collection(db, "posts"),
+            where("path", "==", post_path)
+          );
+          const postDocSnap = (await getDocs(postDocQuery)).docs[0];
+          if (postDocSnap.exists()) {
+            const postData = postDocSnap.data();
+            if (postData.author === user.uid) {
+              setPost(postData);
+              setTitle(postData.title);
+              setContent(postData.content);
+              setSource(postData.source || "");
+            } else {
+              toast.error("Você não tem permissão para editar esta postagem.");
+              router.push(`/${username}/${post_path}`);
+            }
+          } else {
+            toast.error("Postagem não encontrada.");
+            router.push("/");
+          }
+        } catch (error) {
+          console.error("Erro ao carregar a postagem:", error);
+          toast.error("Erro ao carregar a postagem.");
+        }
+      };
+
+      fetchPost();
+    }
+  }, [user, post_path, router]);
+
   const handleSubmit = async () => {
     if (!user) {
-      toast.error("Você precisa fazer login para criar uma postagem!");
-      router.push("/auth/login/?return=/new");
+      toast.error("Você precisa fazer login para editar esta postagem!");
+      router.push(`/auth/login/?return=/${username}/${post_path}/edit`);
       return;
     }
 
@@ -215,43 +147,83 @@ const New = () => {
     }
 
     try {
-      const postRef = collection(db, "posts");
-      const newPost = {
+      const postQuery = query(
+        collection(db, "posts"),
+        where("path", "==", post_path)
+      );
+      const postRef = (await getDocs(postQuery)).docs[0].ref;
+      await updateDoc(postRef, {
         title,
-        titleLowerCase: title.toLowerCase(),
         content,
         source: source || null,
-        author: user.uid,
         date: new Date(),
-        tags: selectedTags,
-        path: strFormat(title),
-        id: doc(postRef).id,
-        likes: 0,
-        comments: []
-      };
+      });
 
-      await addDoc(postRef, newPost);
-      toast.success("Postagem criada com sucesso!");
-      router.push(`/${user.username}/${newPost.path}`);
+      toast.success("Postagem atualizada com sucesso!");
+      router.push(`/${username}/${post_path}`);
     } catch (error) {
-      console.error("Erro ao criar a postagem:", error);
-      toast.error("Erro ao criar a postagem.");
+      console.error("Erro ao atualizar a postagem:", error);
+      toast.error("Erro ao atualizar a postagem.");
     }
   };
 
-  const strFormat = (str) => {
-    return str
+  const handleDelete = async () => {
+    try {
+      await deleteDoc(doc(db, "posts", post.id));
+      toast.success("Postagem excluída com sucesso!");
+      router.push("/");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const formatUsername = (name) => {
+    return name
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/\s+/g, "-")
       .toLowerCase()
-      .replace(/[?!°,.#]/g, "")
-      .replace(/--+/g, "-");
+      .replace(/[!?°,°#]/g, "");
   };
 
   renderer.heading = (text, level) => {
     const slug = text.toLowerCase().replace(/\s+/g, "-");
     return `<h${level} id="${slug}">${text}</h${level}>`;
+  };
+
+  renderer.list = (body, ordered, start) => {
+    if (ordered) {
+      return `<ol>${body}</ol>`;
+    } else {
+      if (body.includes('<input type="checkbox"')) {
+        return `<ul class="checklist">${body}</ul>`;
+      } else {
+        return `<ul>${body}</ul>`;
+      }
+    }
+  };
+
+  renderer.listitem = (text, task, checked) => {
+    if (task) {
+      return `<li><input type="checkbox" disabled ${checked ? "checked" : ""} value="${text}"/></li>`;
+    }
+    return `<li>${text}</li>`;
+  };
+
+  renderer.codespan = (code) => `<p><code>${code}</code></p>`;
+  renderer.code = (code, language) => {
+    const validLanguage = hljs.getLanguage(language) ? language : "plaintext";
+    const highlighted = hljs.highlight(code, { language: validLanguage }).value;
+    return `<pre><code class="hljs ${validLanguage}">${highlighted}</code></pre>`;
+  };
+
+  renderer.image = (href, text) => {
+    return `
+      <figure>
+        <img src="${href}" alt="${text}" />
+        <figcaption>${text}</figcaption>
+      </figure>
+    `;
   };
 
   marked.setOptions({
@@ -262,9 +234,11 @@ const New = () => {
     },
   });
 
+  if (!post) return <div>Carregando...</div>;
+
   return (
     <>
-      <h1>Nova postagem</h1>
+      <h1>Editar postagem</h1>
       <div className="alert">
         <small>
           Para manter nossa comunidade organizada, com conteúdos relevantes e
@@ -277,7 +251,7 @@ const New = () => {
       </div>
       <section className="form">
         <div className="input">
-          <label htmlFor="title">Título*</label>
+          <label htmlFor="title">Título</label>
           <input
             type="text"
             id="title"
@@ -286,30 +260,7 @@ const New = () => {
             placeholder="Título da postagem"
           />
         </div>
-
-        <div className="input">
-          <label htmlFor="tags">Tags</label>
-          <details className="md" ref={tagsRef}>
-            <summary className="icon-label">
-              Tags {selectedTags.length != 0 && "(" + selectedTags.length + ")"}
-              <TagSimple />
-            </summary>
-            <div className="inside tags">
-              {orderedTags.map((tag) => (
-                <button
-                  key={tag.name}
-                  onClick={() => toggleTag(tag.name)}
-                  className={`icon-label pill ${selectedTags.includes(tag.name) ? "active" : ""}`}
-                >
-                  {tag.icon} {tag.name}
-                </button>
-              ))}
-            </div>
-          </details>
-        </div>
-
         <div className="content_input">
-          <label htmlFor="content">Conteúdo*</label>
           <div className="content_input_styles_textarea">
             <div className="content_input_styles">
               <div className="content_input_styles_buttons">
@@ -410,38 +361,55 @@ const New = () => {
                 </button>
                 <button
                   className="icon"
-                  onClick={() => setContent(content + "```\n\n```")}
-                  title="Código"
+                  onClick={() => setContent(content + "\n```js\n```")}
+                  title="Código em bloco"
                 >
                   <BracketsCurly />
                 </button>
                 <button
                   className="icon"
-                  onClick={() => setContent(content + "![texto](url)")}
-                  title="Imagem"
-                >
-                  <Image />
-                </button>
-                <button
-                  className="icon"
-                  onClick={() => setContent(content + "- item")}
+                  onClick={() =>
+                    setContent(content + "\n- item 1\n- item 2\n- item 3")
+                  }
                   title="Lista não ordenada"
                 >
                   <ListBullets />
                 </button>
                 <button
                   className="icon"
-                  onClick={() => setContent(content + "1. item")}
+                  onClick={() =>
+                    setContent(content + "\n1. item 1\n2. item 2\n3. item 3")
+                  }
                   title="Lista ordenada"
                 >
                   <ListNumbers />
                 </button>
                 <button
                   className="icon"
-                  onClick={() => setContent(content + "|   |")}
+                  onClick={() =>
+                    setContent(content + "\n- [ ] item\n- [x] item")
+                  }
+                  title="Caixa de seleção"
+                >
+                  <CheckSquare />
+                </button>
+                <button
+                  className="icon"
+                  onClick={() =>
+                    setContent(content + "\n| Tabela | |\n| ----- | |\n| | |\n")
+                  }
                   title="Tabela"
                 >
                   <Table />
+                </button>
+                <button
+                  className="icon"
+                  onClick={() =>
+                    setContent(content + "\n![descrição](url da imagem)\n")
+                  }
+                  title="Imagem"
+                >
+                  <Image />
                 </button>
               </div>
               <div className="content_input_styles_slider">
@@ -462,14 +430,15 @@ const New = () => {
             {tabIsPreview ? (
               <div
                 className="preview"
-                dangerouslySetInnerHTML={{ __html: marked(content) }}
+                dangerouslySetInnerHTML={{ __html: marked.parse(content) }}
               ></div>
             ) : (
               <textarea
                 id="content"
-                placeholder="Escreva o conteúdo da postagem"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
+                placeholder="Conteúdo"
+                minLength={800}
               ></textarea>
             )}
           </div>
@@ -497,19 +466,22 @@ const New = () => {
             placeholder="https://website.com/"
           />
         </div>
-        <small>Os campos marcados com asterísco (*) são obrigatórios.</small>
         <hr />
         <div className="buttons">
-          <a href="/" className="btn">
+          <a href={`/${username}/${post_path}`} className="btn">
             Cancelar
           </a>
           <button onClick={handleSubmit} className="active">
-            Postar
+            Atualizar
           </button>
         </div>
+        <hr />
+        <button className="danger" onClick={() => handleDelete()}>
+          Deletar postagem
+        </button>
       </section>
     </>
   );
 };
 
-export default New;
+export default EditPost;
