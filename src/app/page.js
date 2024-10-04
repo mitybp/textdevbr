@@ -95,7 +95,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchPosts(currentPage);
-  }, [order, currentPage, fetchPosts]);
+  }, [order, currentPage, fetchPosts()]);
 
   const fetchUserData = async (user) => {
     try {
