@@ -18,6 +18,7 @@ import {
   Pencil,
   Warning,
 } from "@phosphor-icons/react";
+import {Image} from 'next/image';
 
 const PostCard = (props) => {
   let {
@@ -137,7 +138,7 @@ const PostCard = (props) => {
     <div className="post_card" key={post.id}>
       <div className="post_card_info">
         <small>
-          <img
+          <Image
             src={
               author.photoURL ||
               `https://eu.ui-avatars.com/api/?name=${author.name.replaceAll(" ", "+")}&size=250`

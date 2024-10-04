@@ -40,7 +40,7 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import CommentCard from "@/components/CommentCard";
 import { toast } from "react-hot-toast";
-import marked from "marked";
+import {marked} from "marked";
 
 const CommentPage = ({ params }) => {
   const { username, post_path, comm_id } = params;

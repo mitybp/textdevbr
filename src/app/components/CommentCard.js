@@ -44,7 +44,7 @@ const CommentCard = (props) => {
     };
 
     fetchCommentData();
-  }, [comm]);
+  }, [comm, data]);
 
   const handleLikeComment = async (commentId) => {
     const updatedLikes = likedComments.has(commentId) ? likes - 1 : likes + 1;

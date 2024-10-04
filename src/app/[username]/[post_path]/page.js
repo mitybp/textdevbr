@@ -193,7 +193,7 @@ const PostPage = ({ params }) => {
     fetchPostData();
 
     return () => signIn();
-  }, [username, post_path, router]);
+  }, [user, username, post_path, router]);
 
   const formatTimestamp = (timestamp) => {
     if (timestamp) {

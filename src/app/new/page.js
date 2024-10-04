@@ -200,7 +200,7 @@ const New = () => {
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, [router, user]);
 
   const handleSubmit = async () => {
     if (!user) {
