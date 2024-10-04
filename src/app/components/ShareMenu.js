@@ -75,5 +75,5 @@ const ShareMenu = forwardRef((props, ref) => {
     </details>
   );
 });
-
+ShareMenu.displayName = "ShareMenu";
 export default ShareMenu;
