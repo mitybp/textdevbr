@@ -12,7 +12,12 @@ const nextConfig = {
         hostname: 'firebasestorage.googleapis.com',
         port: '',
         pathname: '/**',
-      },
+      },{
+        protocol: 'https',
+        hostname: 'eu.ui-avatars.com',
+        port: '',
+        pathname: '/**'
+      }
     ],
   },
 };

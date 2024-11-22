@@ -32,7 +32,7 @@ const Activity = () => {
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [router, fetchUserActivity]);
 
   const fetchUserActivity = async (uid) => {
     try {

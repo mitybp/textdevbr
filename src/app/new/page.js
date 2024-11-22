@@ -75,7 +75,7 @@ const New = () => {
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, [router, user]);
 
   const handleSubmit = async (isDraft = false) => {
     if (!user) {

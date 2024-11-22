@@ -50,7 +50,7 @@ export default function Layout({ children }) {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     // Close menu when clicking outside

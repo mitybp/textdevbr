@@ -118,7 +118,7 @@ const EditPost = () => {
 
       fetchPost();
     }
-  }, [user, post_path, router]);
+  }, [user, username, post_path, router]);
 
   const handleSubmit = async (isDraft) => {
     if (!user) {
