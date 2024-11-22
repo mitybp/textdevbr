@@ -5,7 +5,7 @@ import { BookmarksSimple, Heart, HouseSimple } from "@phosphor-icons/react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import toast from "react-hot-toast";
 
 const Activity = () => {
@@ -148,7 +148,7 @@ const Activity = () => {
   };
 
   return (
-    <>
+    <Suspense>
       <h1>Atividade</h1>
       <section className="tabs">
         <button
@@ -178,7 +178,7 @@ const Activity = () => {
           </>
         )}
       </section>
-    </>
+    </Suspense>
   );
 };
 
