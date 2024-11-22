@@ -7,11 +7,14 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
+
+import Link from "next/link";
 
 export default function DeletePosts() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const handleDeletePosts = async () => {
     if (auth.currentUser) {
@@ -34,7 +37,7 @@ export default function DeletePosts() {
           toast.error("Nenhuma postagem encontrada para deletar.");
         }
 
-        router.push("/profile");
+        router.push(searchParams.get('redirect')||"/");
       } catch (error) {
         toast.error("Erro ao deletar postagens!");
       }
@@ -48,10 +51,10 @@ export default function DeletePosts() {
     <section className="form">
       <h1>Deletar postagens</h1>
       <div className="buttons">
-        <a href="/profile" className="btn active">
+        <Link href={searchParams.get('redirect')||"/"} className="btn active">
           Cancelar
-        </a>
-        <button onClick={handleDeletePosts}>Deletar postagens</button>
+        </Link>
+        <button onClick={handleDeletePosts} className="danger">Deletar postagens</button>
       </div>
     </section>
   );

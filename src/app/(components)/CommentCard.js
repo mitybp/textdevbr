@@ -112,14 +112,14 @@ const CommentCard = (props) => {
     data && (
       <div className="comment_card">
         <div className="comment_card_header">
-          <a href={`/${data.author.username}`}>{data.author.username}</a> •{" "}
+          <Link href={`/${data.author.username}`}>{data.author.username}</Link> •{" "}
           {formatTimestamp(data.date)}
         </div>
-        <a
+        <Link
           href={`/${data.author.username}/${data.id}`}
           className={`comment_card_content ${inActivity && "italic"}`}
           dangerouslySetInnerHTML={{ __html: data.content }}
-        ></a>
+        ></Link>
         <div className="comment_card_footer">
           <button
             onClick={() => handleLikeComment(data.id)}
@@ -128,24 +128,25 @@ const CommentCard = (props) => {
             <Heart weight={likedComments.has(data.id) ? "fill" : "regular"} />
             {likes}
           </button>
-          <a
+          <Link
             href={`/${data.author.username}/${data.id}`}
             className={`btn ${data.comments.length != 0 ? "icon-label" : "icon"}`}
           >
             <ChatCircle />
             {data.comments.length != 0 && data.comments.length}
-          </a>
+          </Link>
           <ShareMenu
             ref={shareRef}
             side="right"
             text={`Veja o comentário de ${data.author.name} no text.dev.br!`}
-            link={`https://text.dev.br/${username}/${post_path}/comments/${data.id}/`}
-            qrpath={`${username}/${post_path}`}
+            path={`u/${username}/${post_path}`}
           />
         </div>
       </div>
     )
   );
 };
+
+import Link from "next/link";
 
 export default CommentCard;

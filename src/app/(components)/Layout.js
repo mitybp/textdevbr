@@ -1,24 +1,27 @@
 "use client";
 import { auth, db } from "@/firebase";
 import {
-  BookmarksSimple,
   Gear,
   Moon,
-  Pencil,
   PlusCircle,
   SignIn,
   SignOut,
   Sun,
   User,
   Heart,
+  PencilSimple,
+  BellSimple,
+  Pulse,
 } from "@phosphor-icons/react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { Timestamp, doc, getDoc, setDoc } from "firebase/firestore";
-import Cookies from "js-cookie";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
+import Cookies from "js-cookie";
+import { doc, getDoc } from "firebase/firestore";
+
+import Link from "next/link";
 
 export default function Layout({ children }) {
   const [theme, setTheme] = useState("light");
@@ -33,43 +36,16 @@ export default function Layout({ children }) {
     setTheme(initialTheme);
     document.body.classList.add(initialTheme);
 
-    // Handle user authentication state
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
-        const docRef = doc(db, "users", u.uid);
-        const docSnap = await getDoc(docRef);
-        if (!docSnap.exists()) {
-          const userData = {
-            description: "",
-            email: u.email,
-            emailVerified: u.emailVerified,
-            joinedAt: Timestamp.now(),
-            name: u.displayName,
-            username: user.username,
-            photoURL: u.photoURL,
-            uid: u.uid,
-            website: "",
-            social: {
-              github: "",
-              instagram: "",
-              facebook: "",
-              twitter: "",
-              threads: "",
-              whatsapp: "",
-            },
-            savedPosts: [],
-          };
-          await setDoc(docRef, userData);
+        let userDoc = await getDoc(doc(db, "users", u.uid));
+        if(userDoc.exists()){
+          let userData = userDoc.data();
           setUser(userData);
-          Cookies.set("user", JSON.stringify(userData), { expires: 365 });
-        } else {
-          const userData = docSnap.data();
-          setUser(userData);
-          Cookies.set("user", JSON.stringify(userData), { expires: 365 });
+          localStorage.setItem("user", JSON.stringify(userData));
         }
       } else {
         setUser(null);
-        Cookies.remove("user");
       }
     });
 
@@ -95,32 +71,26 @@ export default function Layout({ children }) {
     document.body.classList.add(newTheme);
   };
 
-  const formatUsername = (name) => {
-    return name
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/\s+/g, "-")
-      .toLowerCase()
-      .replace(/[!?°,°#]/g, "");
-  };
-
   return (
     <body className={theme}>
       <Toaster position="top-center" />
       <header>
-        <a href="/" className="brand">
+        <Link href="/" className="brand">
           .dev
-        </a>
+        </Link>
         <div className="links">
           {user ? (
             <>
-              <a href="/new" className="btn icon active" title="Nova postagem">
+              <Link href="/new" className="btn icon active" title="Nova postagem">
                 <PlusCircle />
-              </a>
+              </Link>
               <hr className="y" />
-              <a href="/activity" className="btn icon" title="Minha atividade">
-                <Heart />
-              </a>
+              <Link href="/activity" className="btn icon" title="Minha atividade">
+                <Pulse />
+              </Link>
+              {/* <Link href="/notifications" className="btn icon" title="Notificações">
+                <BellSimple />
+              </Link> */}
               <details className="md" ref={menuRef}>
                 <summary className="user">
                   <Image
@@ -132,21 +102,21 @@ export default function Layout({ children }) {
                   />
                 </summary>
                 <div className="left">
-                  <a
-                    href={`/${user.username}`}
+                  <Link
+                    href={`/u/${user.username}`}
                     className="btn icon-label active"
                   >
                     Meu perfil <User />
-                  </a>
-                  <a href={`/${user.username}/edit`} className="btn icon-label">
-                    Editar perfil <Pencil />
-                  </a>
-                  <a
-                    href={`/${user.username}/settings`}
-                    className="btn icon-label"
-                  >
+                  </Link>
+                  <hr />
+                  <Link href="/settings/profile" className="btn icon-label">
+                    Editar perfil <PencilSimple />
+                  </Link>
+                  
+                  <Link href="/settings/account" className="btn icon-label">
                     Configurações <Gear />
-                  </a>
+                  </Link>
+                  
                   <button
                     className="icon-label"
                     onClick={toggleTheme}
@@ -155,30 +125,26 @@ export default function Layout({ children }) {
                     Mudar o tema {theme === "dark" ? <Sun /> : <Moon />}
                   </button>
                   <hr />
-                  <button
-                    className="icon-label"
-                    onClick={() => {
-                      signOut(auth);
-                      toast.error("Você saiu da conta!");
-                      router.push("/");
-                    }}
+                  <Link
+                    className="btn icon-label danger"
+                    href="/auth/signout"
                     title="Sair"
                   >
                     Sair <SignOut />
-                  </button>
+                  </Link>
                 </div>
               </details>
             </>
           ) : (
             <>
-              <a
+              <Link
                 title="Entrar"
                 className="btn icon-label active"
                 href="/auth/login"
               >
                 <SignIn />
                 <span>Entrar</span>
-              </a>
+              </Link>
               <hr className="y" />
               <button
                 className="icon"
@@ -199,7 +165,7 @@ export default function Layout({ children }) {
         </div>
         <div>
           <p>
-            Feito com ❤️ por <a href="/dimitri.pusch">dimitri.pusch</a>
+            Feito com ❤️ por <Link href="/u/dimitri.pusch">dimitri.pusch</Link>
           </p>
           <p>text.dev.br &copy; 2024</p>
         </div>

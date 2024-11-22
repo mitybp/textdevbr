@@ -6,6 +6,8 @@ import { deleteUser, signOut } from "firebase/auth";
 import toast from "react-hot-toast";
 import { deleteDoc, doc } from "firebase/firestore";
 
+import Link from "next/link";
+
 export default function DeleteAccount() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -54,12 +56,12 @@ export default function DeleteAccount() {
       </p>
       <p>
         Caso queira deixar sua opinião, envie-nos um e-mail:{" "}
-        <a href="mailto:contact@text.dev.br" type="mail">contact@text.dev.br</a>
+        <Link href="mailto:contact@text.dev.br" type="mail">contact@text.dev.br</Link>
       </p>
       <div className="buttons">
-        <a href="/" className="btn active">
+        <Link href="/" className="btn active">
           Cancelar
-        </a>
+        </Link>
         <button onClick={handleDeleteAccount} disabled={loading}>
           {loading ? "Deletando..." : "Deletar conta"}
         </button>

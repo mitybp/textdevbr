@@ -13,6 +13,8 @@ import { Eye, EyeClosed } from "@phosphor-icons/react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/firebase";
 
+import Link from "next/link";
+
 export default function AuthAction() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -145,9 +147,9 @@ export default function AuthAction() {
               </div>
             </div>
             <div className="buttons">
-              <a href="/auth/login" className="btn">
+              <Link href="/auth/login" className="btn">
                 Cancelar
-              </a>
+              </Link>
               <button
                 className="active"
                 onClick={handleResetPassword}
@@ -164,9 +166,9 @@ export default function AuthAction() {
           <section className="form">
             <h1>Recuperar Email</h1>
             <div className="buttons">
-              <a href="/auth/login" className="btn">
+              <Link href="/auth/login" className="btn">
                 Cancelar
-              </a>
+              </Link>
               <button className="active" onClick={handleRecoverEmail} disabled={loading}>
                 Recuperar Email
               </button>
@@ -179,9 +181,9 @@ export default function AuthAction() {
           <section className="form">
             <h1>Verificar Email</h1>
             <div className="buttons">
-              <a href="/auth/login" className="btn">
+              <Link href="/auth/login" className="btn">
                 Cancelar
-              </a>
+              </Link>
               <button className="active" onClick={handleVerifyEmail} disabled={loading}>
                 Verificar Email
               </button>
@@ -194,9 +196,9 @@ export default function AuthAction() {
           <section className="form">
             <h1>Deletar Conta</h1>
             <div className="buttons">
-              <a href="/" className="btn">
+              <Link href="/" className="btn">
                 Cancelar
-              </a>
+              </Link>
               <button className="btn danger" onClick={handleDeleteAccount}>
                 Deletar minha conta
               </button>

@@ -207,9 +207,9 @@ const ReportUser = ({ params }) => {
         </div>
         <p><b>Confira se este é o perfil que você irá denúnciar para evitar conflitos e denúncias equivocadas.</b></p>
         <div className="buttons">
-          <a href={`/${params.username}`} className="btn">
+          <Link href={`/${params.username}`} className="btn">
             Cancelar
-          </a>
+          </Link>
           <button className="active" onClick={handleSubmit}>
             Enviar denúncia
           </button>
@@ -218,5 +218,7 @@ const ReportUser = ({ params }) => {
     </>
   );
 };
+
+import Link from "next/link";
 
 export default ReportUser;

@@ -40,87 +40,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
-// Helper function to format strings
-const strFormat = (str) => {
-  return str
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replaceAll(" ", "-")
-    .toLowerCase()
-    .replaceAll(/[?!°,.#]/g, "")
-    .replaceAll("--+", "-");
-};
-
-// Function to fetch user data and check permissions
-const fetchUserDataAndValidate = async (
-  setUser,
-  setDescription,
-  setWebsite,
-  setName,
-  setUsername,
-  setPhotoURL,
-  setSocial,
-  router,
-  usernameParam
-) => {
-  const unsubscribe = onAuthStateChanged(auth, async (u) => {
-    if (u) {
-      const userDocRef = doc(db, "users", u.uid);
-      const userDocSnap = await getDoc(userDocRef);
-
-      if (userDocSnap.exists()) {
-        const tempUser = userDocSnap.data();
-        if (tempUser.username !== usernameParam) {
-          router.push(`/${usernameParam}`);
-          toast.error("Você não tem permissão para editar este perfil.");
-          return;
-        }
-
-        setUser(tempUser);
-        setDescription(tempUser.description || "");
-        setWebsite(tempUser.website || "");
-        setName(tempUser.name || "");
-        setUsername(tempUser.username || "");
-        setPhotoURL(tempUser.photoURL || "");
-        setSocial(tempUser.social || "");
-      } else {
-        const userData = {
-          description: "",
-          email: u.email,
-          emailVerified: u.emailVerified,
-          joinedAt: Timestamp.now(),
-          name: u.displayName,
-          username: strFormat(u.displayName || ""),
-          photoURL: u.photoURL,
-          uid: u.uid,
-          website: "",
-          social: "",
-          savedPosts: [],
-        };
-        await setDoc(userDocRef, userData);
-        setUser(userData);
-        setDescription(userData.description);
-        setWebsite(userData.website);
-        setName(userData.name);
-        setUsername(userData.username);
-        setPhotoURL(userData.photoURL);
-        setSocial(userData.github);
-      }
-    } else {
-      router.push("/auth/login");
-      toast.error("Faça login para editar seu perfil.");
-    }
-  });
-
-  return unsubscribe;
-};
-
-// Function to handle saving user data
 const handleSave = async (
   user,
   description,
   website,
-  name,
   username,
   photoURL,
   social,
@@ -132,17 +55,16 @@ const handleSave = async (
       await updateDoc(userDocRef, {
         description: description.replaceAll("\n", "<br/>"),
         website,
-        name,
         username,
         photoURL,
         social,
       });
       await updateProfile(auth.currentUser, {
-        displayName: name,
+        displayName: username,
         photoURL,
       });
       toast.success("Perfil atualizado com sucesso!");
-      router.push(`/${user.username}`);
+      router.push(`/u/${user.username}`);
     } catch (error) {
       toast.error("Erro ao atualizar perfil.");
       console.error("Erro ao atualizar perfil:", error);
@@ -150,8 +72,12 @@ const handleSave = async (
   }
 };
 
-// Function to handle file upload
 const handleFileUpload = async (e, user, setPhotoURL) => {
+  if (!user || !user.uid) {
+    toast.error("Usuário não autenticado. Faça login novamente.");
+    return;
+  }
+
   const file = e.target.files[0];
   if (!file) return;
 
@@ -175,11 +101,10 @@ const handleFileUpload = async (e, user, setPhotoURL) => {
   );
 };
 
-export default function ProfileEdit({ params }) {
-  const [user, setUser] = useState(null);
+export default function ProfileEdit() {
+  const [user, setUser] = useState(localStorage.getItem("user"));
   const [description, setDescription] = useState("");
   const [website, setWebsite] = useState("");
-  const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [photoURL, setPhotoURL] = useState("");
   const [social, setSocial] = useState({
@@ -192,13 +117,11 @@ export default function ProfileEdit({ params }) {
   });
   const [tabIsPreview, setTabIsPreview] = useState(false);
   const headingRef = useRef(null);
-
-  const renderer = new marked.Renderer();
   const router = useRouter();
-  const usernameParam = params.username; // Get the username from params
 
   useEffect(() => {
     document.title = "Editar meu perfil - text.dev.br";
+
     const handleClickOutside = (event) => {
       if (headingRef.current && !headingRef.current.contains(event.target)) {
         headingRef.current.removeAttribute("open");
@@ -208,22 +131,30 @@ export default function ProfileEdit({ params }) {
     return () => {
       document.removeEventListener("click", handleClickOutside);
     };
-  });
+  }, []);
 
   useEffect(() => {
-    const unsubscribe = fetchUserDataAndValidate(
-      setUser,
-      setDescription,
-      setWebsite,
-      setName,
-      setUsername,
-      setPhotoURL,
-      setSocial,
-      router,
-      usernameParam
-    );
-    return () => unsubscribe;
-  }, [router, usernameParam]);
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      const fetchUserData = async () => {
+        const userDoc = await getDoc(doc(db, "users", parsedUser.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setUser(userData);
+          setDescription(userData.description || "");
+          setWebsite(userData.website || "");
+          setUsername(userData.username || "");
+          setPhotoURL(userData.photoURL || "");
+          setSocial(userData.social || {});
+        }
+      };
+      fetchUserData();
+    } else {
+      toast.error("Usuário não encontrado. Faça login novamente.");
+      router.push("/auth/login");
+    }
+  }, [router]);
 
   return (
     <>
@@ -250,7 +181,7 @@ export default function ProfileEdit({ params }) {
               accept="image/*"
               id="photo"
               type="file"
-              onChange={handleFileUpload}
+              onChange={(e)=>handleFileUpload(e, user, setPhotoURL)}
             />
           </div>
         </div>
@@ -264,16 +195,6 @@ export default function ProfileEdit({ params }) {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Nome de usuário"
-          />
-        </div>
-        <div className="input">
-          <label htmlFor="name">Nome</label>
-          <input
-            type="text"
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value.trim())}
-            placeholder="Nome"
           />
         </div>
 
@@ -585,7 +506,7 @@ export default function ProfileEdit({ params }) {
         </div>
 
         <div className="buttons">
-          <a href="/profile" className="btn">
+          <a href="/" className="btn">
             Cancelar
           </a>
           <button
@@ -594,7 +515,6 @@ export default function ProfileEdit({ params }) {
                 user,
                 description,
                 website,
-                name,
                 username,
                 photoURL,
                 social,

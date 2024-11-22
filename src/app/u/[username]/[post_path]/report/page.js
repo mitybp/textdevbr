@@ -185,9 +185,9 @@ const ReportPost = ({ params }) => {
         </div>
         <p><b>Confira se esta é a postagem que você irá denúnciar para evitar conflitos e denúncias equivocadas.</b></p>
         <div className="buttons">
-          <a href={`/${params.username}`} className="btn">
+          <Link href={`/${params.username}`} className="btn">
             Cancelar
-          </a>
+          </Link>
           <button className="active" onClick={handleSubmit}>
             Enviar denúncia
           </button>
@@ -196,5 +196,7 @@ const ReportPost = ({ params }) => {
     </>
   );
 };
+
+import Link from "next/link";
 
 export default ReportPost;

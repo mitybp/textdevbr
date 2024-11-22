@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 
+import Link from "next/link";
+
 export default function ProfileSettings() {
   useEffect(()=>{
     document.title = "Configurações - text.dev.br";
@@ -11,20 +13,20 @@ export default function ProfileSettings() {
       <h1>Configurações</h1>
       <section className="form">
         <div>
-          <a href="/auth/reset-password" className="btn icon-label">
+          <Link href="/auth/reset-password" className="btn icon-label">
             Redefinir senha
-          </a>
-          <a href="/auth/recover-email" className="btn icon-label">
+          </Link>
+          <Link href="/auth/recover-email" className="btn icon-label">
             Recuperar e-mail
-          </a>
+          </Link>
           <hr/>
-          <a href="/auth/delete-posts" className="btn icon-label danger active">
+          <Link href="/auth/delete-posts" className="btn icon-label danger active">
             Deletar postagens
-          </a>
+          </Link>
           <hr/>
-          <a href="/auth/delete-account" className="btn icon-label danger active">
+          <Link href="/auth/delete-account" className="btn icon-label danger active">
             Deletar conta
-          </a>
+          </Link>
         </div>
       </section>
     </>

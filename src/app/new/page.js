@@ -1,47 +1,16 @@
 "use client";
 import { auth, db } from "@/firebase";
 import {
-  AmazonLogo,
-  AndroidLogo,
-  AppWindow,
-  ArrowUpRight,
   BracketsCurly,
-  Brain,
-  Chats,
-  Cloud,
   Code,
-  Database,
-  Desktop,
-  DeviceMobile,
-  DotOutline,
   Eye,
-  FileC,
-  FileCSharp,
-  FileCss,
-  FileHtml,
-  FileJs,
-  FileJsx,
-  FilePy,
-  FileTs,
-  FolderOpen,
-  GitBranch,
-  GithubLogo,
-  Hexagon,
   Image,
   Link,
-  LinuxLogo,
   ListBullets,
   ListNumbers,
-  Network,
-  Newspaper,
+  PencilSimple,
   Quotes,
-  Robot,
-  Shield,
-  Steps,
-  SuitcaseSimple,
   Table,
-  TestTube,
-  TextAa,
   TextB,
   TextH,
   TextHFive,
@@ -52,21 +21,9 @@ import {
   TextHTwo,
   TextItalic,
   TextStrikethrough,
-  Video,
-  Coffee,
-  TagSimple,
-  Pencil,
 } from "@phosphor-icons/react";
 import { onAuthStateChanged } from "firebase/auth";
-import {
-  addDoc,
-  collection,
-  doc,
-  getDoc,
-  setDoc,
-  Timestamp,
-} from "firebase/firestore";
-import hljs from "highlight.js";
+import { collection, doc, getDoc, setDoc } from "firebase/firestore";
 import { marked } from "marked";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -77,65 +34,11 @@ const New = () => {
   const [content, setContent] = useState("");
   const [source, setSource] = useState("");
   const [user, setUser] = useState(null);
+  const [drafts, setDrafts] = useState([]); // Lista de rascunhos do usuário
   const [tabIsPreview, setTabIsPreview] = useState(false);
-  const [selectedTags, setSelectedTags] = useState([]);
+  const [isAsideOpen, setIsAsideOpen] = useState(false); // Controla a visibilidade do aside
   const router = useRouter();
   const headingRef = useRef(null);
-  const tagsRef = useRef(null);
-
-  const toggleTag = (tag) => {
-    if (selectedTags.includes(tag)) {
-      setSelectedTags(selectedTags.filter((t) => t !== tag));
-    } else {
-      setSelectedTags([...selectedTags, tag]);
-    }
-  };
-
-  const tagsValues = [
-    { name: "webdev", icon: <Desktop /> },
-    { name: "js", icon: <FileJs /> },
-    { name: "beginners", icon: <Steps /> },
-    { name: "tutorial", icon: <Video /> },
-    { name: "react", icon: <FileJsx /> },
-    { name: "python", icon: <FilePy /> },
-    { name: "ai", icon: <Robot /> },
-    { name: "productivity", icon: <ArrowUpRight /> },
-    { name: "opensource", icon: <FolderOpen /> },
-    { name: "aws", icon: <AmazonLogo /> },
-    { name: "css", icon: <FileCss /> },
-    { name: "node", icon: <Hexagon /> },
-    { name: "java", icon: <Coffee /> },
-    { name: "learning", icon: <Brain /> },
-    { name: "typescript", icon: <FileTs /> },
-    { name: "news", icon: <Newspaper /> },
-    { name: "career", icon: <SuitcaseSimple /> },
-    { name: "db", icon: <Database /> },
-    { name: "discuss", icon: <Chats /> },
-    { name: "android", icon: <AndroidLogo /> },
-    { name: "dotnet", icon: <DotOutline /> },
-    { name: "cloud", icon: <Cloud /> },
-    { name: "html", icon: <FileHtml /> },
-    { name: "security", icon: <Shield /> },
-    { name: "frontend", icon: <TextAa /> },
-    { name: "backend", icon: <Code /> },
-    { name: "github", icon: <GithubLogo /> },
-    { name: "testing", icon: <TestTube /> },
-    { name: "csharp", icon: <FileCSharp /> },
-    { name: "c", icon: <FileC /> },
-    { name: "api", icon: <Network /> },
-    { name: "mobile", icon: <DeviceMobile /> },
-    { name: "app", icon: <AppWindow /> },
-    { name: "linux", icon: <LinuxLogo /> },
-    { name: "git", icon: <GitBranch /> },
-  ];
-
-  const orderedTags = [...tagsValues].sort((a, b) => {
-    if (selectedTags.includes(a.name) && !selectedTags.includes(b.name))
-      return -1;
-    if (!selectedTags.includes(a.name) && selectedTags.includes(b.name))
-      return 1;
-    return tagsValues.indexOf(a) - tagsValues.indexOf(b);
-  });
 
   const renderer = new marked.Renderer();
 
@@ -146,9 +49,6 @@ const New = () => {
       if (headingRef.current && !headingRef.current.contains(event.target)) {
         headingRef.current.removeAttribute("open");
       }
-      if (tagsRef.current && !tagsRef.current.contains(event.target)) {
-        tagsRef.current.removeAttribute("open");
-      }
     };
     document.addEventListener("click", handleClickOutside);
     return () => {
@@ -157,41 +57,16 @@ const New = () => {
   }, []);
 
   useEffect(() => {
+    document.title = "Criar nova postagem - text.dev.br";
+
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
         const userDocRef = doc(db, "users", u.uid);
         const userDocSnap = await getDoc(userDocRef);
 
-        let temp_user = null;
-
         if (userDocSnap.exists()) {
-          temp_user = userDocSnap.data();
-          setUser(temp_user);
-        } else {
-          const userData = {
-            description: "",
-            email: u.email,
-            emailVerified: u.emailVerified,
-            joinedAt: Timestamp.now(),
-            name: u.displayName,
-            username: user.username,
-            photoURL: u.photoURL,
-            uid: u.uid,
-            website: "",
-            social: {
-              github: "",
-              instagram: "",
-              facebook: "",
-              twitter: "",
-              threads: "",
-              whatsapp: "",
-            },
-            savedPosts: [],
-          };
-
-          await setDoc(userDocRef, userData);
-          temp_user = userData;
-          setUser(temp_user);
+          const tempUser = userDocSnap.data();
+          setUser({ ...tempUser, uid: u.uid });
         }
       } else {
         router.push("/auth/login");
@@ -202,7 +77,7 @@ const New = () => {
     return () => unsubscribe();
   }, [router]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (isDraft = false) => {
     if (!user) {
       toast.error("Você precisa fazer login para criar uma postagem!");
       router.push("/auth/login/?return=/new");
@@ -213,9 +88,15 @@ const New = () => {
       toast.error("Preencha os campos de título e conteúdo!");
       return;
     }
+    if (!isDraft && content.trim().split(" ").length < 200) {
+      toast.error("O conteúdo precisa ter mais de 200 palavras!");
+      return;
+    }
 
     try {
       const postRef = collection(db, "posts");
+      const postId = doc(postRef).id; // Gera o ID único
+
       const newPost = {
         title,
         titleLowerCase: title.toLowerCase(),
@@ -223,16 +104,19 @@ const New = () => {
         source: source || null,
         author: user.uid,
         date: new Date(),
-        tags: selectedTags,
         path: strFormat(title),
-        id: doc(postRef).id,
+        id: postId, // Usa o ID gerado
         likes: 0,
-        comments: []
+        comments: [],
+        isDraft, // Adiciona a propriedade isDraft
       };
 
-      await addDoc(postRef, newPost);
-      toast.success("Postagem criada com sucesso!");
-      router.push(`/${user.username}/${newPost.path}`);
+      await setDoc(doc(postRef, postId), newPost);
+
+      toast.success(
+        isDraft ? "Rascunho salvo com sucesso!" : "Postagem criada com sucesso!"
+      );
+      router.push(`/u/${user.username}/${newPost.path}`);
     } catch (error) {
       console.error("Erro ao criar a postagem:", error);
       toast.error("Erro ao criar a postagem.");
@@ -256,6 +140,8 @@ const New = () => {
 
   marked.setOptions({
     renderer,
+    breaks: true,
+    gfm: true,
     highlight: (code, lang) => {
       const language = hljs.getLanguage(lang) ? lang : "plaintext";
       return hljs.highlight(code, { language }).value;
@@ -265,51 +151,21 @@ const New = () => {
   return (
     <>
       <h1>Nova postagem</h1>
-      <div className="alert">
-        <small>
-          Para manter nossa comunidade organizada, com conteúdos relevantes e
-          interessantes para todos, faça questão de{" "}
-          <a href="/dimitri.pusch/manual-de-postagem/">
-            ler esta postagem antes
-          </a>
-          .
-        </small>
-      </div>
       <section className="form">
         <div className="input">
-          <label htmlFor="title">Título*</label>
+          <label htmlFor="title">Título</label>
           <input
             type="text"
             id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Título da postagem"
+            required
           />
         </div>
 
-        <div className="input">
-          <label htmlFor="tags">Tags</label>
-          <details className="md" ref={tagsRef}>
-            <summary className="icon-label">
-              Tags {selectedTags.length != 0 && "(" + selectedTags.length + ")"}
-              <TagSimple />
-            </summary>
-            <div className="inside tags">
-              {orderedTags.map((tag) => (
-                <button
-                  key={tag.name}
-                  onClick={() => toggleTag(tag.name)}
-                  className={`icon-label pill ${selectedTags.includes(tag.name) ? "active" : ""}`}
-                >
-                  {tag.icon} {tag.name}
-                </button>
-              ))}
-            </div>
-          </details>
-        </div>
-
         <div className="content_input">
-          <label htmlFor="content">Conteúdo*</label>
+          <label htmlFor="content">Conteúdo</label>
           <div className="content_input_styles_textarea">
             <div className="content_input_styles">
               <div className="content_input_styles_buttons">
@@ -438,7 +294,12 @@ const New = () => {
                 </button>
                 <button
                   className="icon"
-                  onClick={() => setContent(content + "|   |")}
+                  onClick={() =>
+                    setContent(
+                      content +
+                        "| titulo 1 | titulo 2 |\n| ------ | ------ |\n| valor 1 | valor 2 |"
+                    )
+                  }
                   title="Tabela"
                 >
                   <Table />
@@ -449,7 +310,7 @@ const New = () => {
                   className={`icon ${!tabIsPreview && "active"}`}
                   onClick={() => setTabIsPreview(false)}
                 >
-                  <Pencil />
+                  <PencilSimple />
                 </button>
                 <button
                   className={`icon ${tabIsPreview && "active"}`}
@@ -470,10 +331,17 @@ const New = () => {
                 placeholder="Escreva o conteúdo da postagem"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
+                required
               ></textarea>
             )}
           </div>
-
+          <small
+            className={
+              content.trim().split(" ").length < 200 ? "danger" : "success"
+            }
+          >
+            {content.trim().split(" ").length}/200
+          </small>
           <small>
             Conteúdo em MarkDown.{" "}
             <a
@@ -497,19 +365,18 @@ const New = () => {
             placeholder="https://website.com/"
           />
         </div>
-        <small>Os campos marcados com asterísco (*) são obrigatórios.</small>
+
         <hr />
         <div className="buttons">
-          <a href="/" className="btn">
-            Cancelar
-          </a>
-          <button onClick={handleSubmit} className="active">
-            Postar
+          <button onClick={() => handleSubmit(true)}>Salvar rascunho</button>
+          <button onClick={() => handleSubmit(false)} className="active">
+            Publicar
           </button>
         </div>
       </section>
     </>
   );
 };
+
 
 export default New;

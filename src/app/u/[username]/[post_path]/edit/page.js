@@ -8,7 +8,7 @@ import {
   Link,
   ListBullets,
   ListNumbers,
-  Pencil,
+  PencilSimple,
   Quotes,
   Table,
   TextB,
@@ -22,6 +22,7 @@ import {
   TextItalic,
   TextStrikethrough,
   Eye,
+  Trash,
 } from "@phosphor-icons/react";
 import { onAuthStateChanged } from "firebase/auth";
 import {
@@ -45,7 +46,7 @@ const EditPost = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [source, setSource] = useState("");
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(localStorage.getItem("user"));
   const [post, setPost] = useState(null);
   const [tabIsPreview, setTabIsPreview] = useState(false);
   const router = useRouter();
@@ -69,31 +70,16 @@ const EditPost = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
-        const userDocRef = doc(db, "users", u.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-          setUser(userDocSnap.data());
-        } else {
-          const userData = {
-            description: "",
-            email: u.email,
-            emailVerified: u.emailVerified,
-            joinedAt: Timestamp.now(),
-            name: u.displayName,
-            username: formatUsername(u.displayName),
-            photoURL: u.photoURL,
-            uid: u.uid,
-            website: "",
-            github: "",
-            savedPosts: [],
-          };
-          await setDoc(userDocRef, userData);
+        let userDoc = await getDoc(doc(db, "users", u.uid));
+        if(userDoc.exists()){
+          let userData = userDoc.data();
           setUser(userData);
+          localStorage.setItem("user", JSON.stringify(userData));
         }
       } else {
         setUser(null);
-        toast.error("Você precisa fazer login para editar uma postagem!");
-        router.push("/");
+        router.push(`/auth/login?redirect=/u/${username}/${post_path}/edit`)
+        toast.error("Você precisa entrar para editar a postagem!")
       }
     });
 
@@ -118,7 +104,7 @@ const EditPost = () => {
               setSource(postData.source || "");
             } else {
               toast.error("Você não tem permissão para editar esta postagem.");
-              router.push(`/${username}/${post_path}`);
+              router.push(`/u/${username}/${post_path}`);
             }
           } else {
             toast.error("Postagem não encontrada.");
@@ -134,16 +120,23 @@ const EditPost = () => {
     }
   }, [user, post_path, router]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (isDraft) => {
     if (!user) {
       toast.error("Você precisa fazer login para editar esta postagem!");
       router.push(`/auth/login/?return=/${username}/${post_path}/edit`);
       return;
     }
 
-    if (!title || !content) {
-      toast.error("Preencha os campos de título e conteúdo!");
-      return;
+    if(isDraft) {
+      if (!title) {
+        toast.error("Preencha o campo de título!");
+        return;
+      }
+    }else{
+      if (!title || !content) {
+        toast.error("Preencha os campos de título e conteúdo!");
+        return;
+      }
     }
 
     try {
@@ -157,10 +150,12 @@ const EditPost = () => {
         content,
         source: source || null,
         date: new Date(),
+        isDraft,
+        path: formatUsername(title)
       });
 
-      toast.success("Postagem atualizada com sucesso!");
-      router.push(`/${username}/${post_path}`);
+      toast.success(isDraft?"Rascunho salvo com sucesso!":"Postagem atualizada com sucesso!");
+      router.push(`/${username}/${formatUsername(title)}`);
     } catch (error) {
       console.error("Erro ao atualizar a postagem:", error);
       toast.error("Erro ao atualizar a postagem.");
@@ -228,6 +223,9 @@ const EditPost = () => {
 
   marked.setOptions({
     renderer,
+    breaks: true,
+    gfm: true,
+    sanitize: true,
     highlight: (code, lang) => {
       const language = hljs.getLanguage(lang) ? lang : "plaintext";
       return hljs.highlight(code, { language }).value;
@@ -243,9 +241,9 @@ const EditPost = () => {
         <small>
           Para manter nossa comunidade organizada, com conteúdos relevantes e
           interessantes para todos, faça questão de{" "}
-          <a href="/dimitri.pusch/manual-de-postagem/">
+          <Link href="/dimitri.pusch/manual-de-postagem/">
             ler esta postagem antes
-          </a>
+          </Link>
           .
         </small>
       </div>
@@ -417,7 +415,7 @@ const EditPost = () => {
                   className={`icon ${!tabIsPreview && "active"}`}
                   onClick={() => setTabIsPreview(false)}
                 >
-                  <Pencil />
+                  <PencilSimple />
                 </button>
                 <button
                   className={`icon ${tabIsPreview && "active"}`}
@@ -445,13 +443,13 @@ const EditPost = () => {
 
           <small>
             Conteúdo em MarkDown.{" "}
-            <a
+            <Link
               href="https://www.markdownguide.org/basic-syntax/"
               target="_blank"
               rel="noopener noreferrer"
             >
               Ver documentação
-            </a>
+            </Link>
             .
           </small>
         </div>
@@ -468,20 +466,26 @@ const EditPost = () => {
         </div>
         <hr />
         <div className="buttons">
-          <a href={`/${username}/${post_path}`} className="btn">
-            Cancelar
-          </a>
-          <button onClick={handleSubmit} className="active">
-            Atualizar
+          {post.isDraft ? (
+            <button onClick={() => handleSubmit(true)}>Salvar rascunho</button>
+          ) : (
+            <Link href={`/${username}/${post_path}`} className="btn">
+              Cancelar
+            </Link>
+          )}
+          <button onClick={() => handleSubmit(false)} className="active">
+            {post.isDraft ? "Publicar" : "Atualizar"}
           </button>
         </div>
         <hr />
-        <button className="danger" onClick={() => handleDelete()}>
-          Deletar postagem
+        <button className="icon-label danger" onClick={() => handleDelete()}>
+          Deletar
+          <Trash/>
         </button>
       </section>
     </>
   );
 };
+
 
 export default EditPost;

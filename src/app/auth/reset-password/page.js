@@ -5,6 +5,8 @@ import { auth } from "@/firebase";
 import toast from "react-hot-toast";
 import { sendPasswordResetEmail } from "firebase/auth";
 
+import Link from "next/link";
+
 export default function ResetPassword() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -49,12 +51,12 @@ export default function ResetPassword() {
             required
           />
         </div>
-        <a href="/auth/recover-email">Esqueceu o e-mail?</a>
+        <Link href="/auth/recover-email">Esqueceu o e-mail?</Link>
       </div>
       <div className="buttons">
-        <a href="/auth/login" className="btn">
+        <Link href="/auth/login" className="btn">
           Cancelar
-        </a>
+        </Link>
         <button className="active" onClick={handleResetPassword}>
           Enviar link
         </button>

@@ -1,20 +1,26 @@
 "use client";
-import PostCard from "@/components/PostCard";
+import PostCard from "@/(components)/PostCard";
 import { auth, db } from "@/firebase";
-import { BookmarksSimple, Heart } from "@phosphor-icons/react";
+import { BookmarksSimple, Heart, HouseSimple } from "@phosphor-icons/react";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, doc, documentId, getDoc, getDocs, query, where } from "firebase/firestore";
-import { useRouter } from "next/navigation";
+import { doc, getDoc } from "firebase/firestore";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 const Activity = () => {
   const router = useRouter();
-  const [tab, setTab] = useState("liked");
-  const [likedPosts, setLikedPosts] = useState([]); // Modificado para array
-  const [savedPosts, setSavedPosts] = useState([]); // Modificado para array
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") || "liked";
+  const [tab, setTab] = useState(initialTab);
+
+  const [likedPosts, setLikedPosts] = useState(new Set());
+  const [savedPosts, setSavedPosts] = useState(new Set());
+
+  const [likedPostIdsSet, setLikedPostIdsSet] = useState(new Set());
+  const [savedPostIdsSet, setSavedPostIdsSet] = useState(new Set());
+
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -39,18 +45,17 @@ const Activity = () => {
       }
 
       const userData = userDoc.data();
-      setUser(userData);
+      const likedPostIds = userData.likedPosts || [];
+      const savedPostIds = userData.savedPosts || [];
 
-      const likedPosts = userData.likedPosts || [];
-      const saved = userData.savedPosts || [];
+      const fetchedLikedPosts = await fetchPostsWithAuthors(likedPostIds);
+      const fetchedSavedPosts = await fetchPostsWithAuthors(savedPostIds);
 
-      const [fetchedLikedPosts, fetchedSavedPosts] = await Promise.all([
-        fetchPostsInBatches(likedPosts),
-        fetchPostsInBatches(saved),
-      ]);
+      setLikedPostIdsSet(new Set(likedPostIds));
+      setSavedPostIdsSet(new Set(savedPostIds));
 
-      setLikedPosts(fetchedLikedPosts); // Setando arrays diretamente
-      setSavedPosts(fetchedSavedPosts);
+      setLikedPosts(new Set(fetchedLikedPosts));
+      setSavedPosts(new Set(fetchedSavedPosts));
     } catch (error) {
       toast.error("Erro ao buscar atividades do usuário");
       console.error("Erro ao buscar atividades:", error);
@@ -59,31 +64,84 @@ const Activity = () => {
     }
   };
 
-  const fetchPostsInBatches = async (ids) => {
-    if (ids.length === 0) return []; // Verifica se o array está vazio
-    const batchIds = ids.slice(0, 50); // Limita os IDs
-    const postsQuery = query(
-      collection(db, "posts"),
-      where(documentId(), "in", batchIds)
-    );
-    const postsSnap = await getDocs(postsQuery);
-    return postsSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  const fetchPostsWithAuthors = async (postIds) => {
+    const fetchedPostsPromises = postIds.map(async (postId) => {
+      const postDoc = await getDoc(doc(db, "posts", postId));
+      if (!postDoc.exists()) return null;
+
+      const postData = postDoc.data();
+
+      if (!postData.author) {
+        // Retorna post com autor desconhecido
+        return { ...postData, author: { username: "Anônimo", uid: null } };
+      }
+
+      const authorDoc = await getDoc(doc(db, "users", postData.author));
+      if (!authorDoc.exists()) {
+        // Retorna post com autor desconhecido se não conseguir buscar o autor
+        return { ...postData, author: { username: "Anônimo", uid: null } };
+      }
+
+      const authorData = authorDoc.data();
+      return {
+        ...postData,
+        author: {
+          username: authorData.username || "Anônimo",
+          uid: authorData.uid,
+        },
+      };
+    });
+
+    const fetchedPosts = await Promise.all(fetchedPostsPromises);
+    return fetchedPosts.filter((post) => post !== null);
   };
 
-  const renderPosts = (posts) => {
-    return posts.length === 0 ? (
-      <p>Nenhuma postagem {tab === "liked" ? "curtida" : "salva"} ainda!</p>
+  const handleTabChange = (newTab) => {
+    setTab(newTab);
+    router.push(`/activity/?tab=${newTab}`);
+  };
+
+  // Funções que receberão mudanças dos PostCards
+  const handleLikePostChange = (postId, isLiked) => {
+    setLikedPostIdsSet((prev) => {
+      const newSet = new Set(prev);
+      isLiked ? newSet.add(postId) : newSet.delete(postId);
+      return newSet;
+    });
+  };
+
+  const handleSavePostChange = (postId, isSaved) => {
+    setSavedPostIdsSet((prev) => {
+      const newSet = new Set(prev);
+      isSaved ? newSet.add(postId) : newSet.delete(postId);
+      return newSet;
+    });
+  };
+
+  // Passe essas funções para os PostCards ao renderizar
+  const renderPosts = (postsSet) => {
+    const postsArray = Array.from(postsSet);
+    return postsArray.length === 0 ? (
+      <section className="explore">
+        <p>Nenhuma postagem {tab === "liked" ? "curtida" : "salva"} ainda!</p>
+        <Link href="/" className="btn active icon-label">
+          <HouseSimple />
+          Explorar postagens na página inicial
+        </Link>
+      </section>
     ) : (
-      posts.map((post) => (
+      postsArray.map((post) => (
         <PostCard
           key={post.id}
           post={post}
-          author={user}
-          likedPosts={likedPosts}
+          author={post.author}
+          likedPosts={likedPostIdsSet}
+          savedPosts={savedPostIdsSet}
           setLikedPosts={setLikedPosts}
-          savedPosts={savedPosts}
           setSavedPosts={setSavedPosts}
           isProfile={false}
+          onLikePostChange={handleLikePostChange}
+          onSavePostChange={handleSavePostChange}
         />
       ))
     );
@@ -92,19 +150,20 @@ const Activity = () => {
   return (
     <>
       <h1>Atividade</h1>
-
       <section className="tabs">
         <button
           className={`icon-label ${tab === "liked" ? "active" : ""}`}
-          onClick={() => setTab("liked")}
+          onClick={() => handleTabChange("liked")}
         >
-          <Heart weight={tab === "liked" ? "fill" : "regular"} /> Curtidos
+          <Heart weight={tab === "liked" ? "fill" : "regular"} /> Curtidos (
+          {likedPostIdsSet.size})
         </button>
         <button
           className={`icon-label ${tab === "saved" ? "active" : ""}`}
-          onClick={() => setTab("saved")}
+          onClick={() => handleTabChange("saved")}
         >
-          <BookmarksSimple weight={tab === "saved" ? "fill" : "regular"} /> Salvos
+          <BookmarksSimple weight={tab === "saved" ? "fill" : "regular"} />{" "}
+          Salvos ({savedPostIdsSet.size})
         </button>
       </section>
 
@@ -122,5 +181,7 @@ const Activity = () => {
     </>
   );
 };
+
+import Link from "next/link";
 
 export default Activity;

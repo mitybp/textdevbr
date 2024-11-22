@@ -3,6 +3,8 @@ import { useState } from "react";
 import { getAuth, sendEmailVerification } from "firebase/auth";
 import toast from "react-hot-toast";
 
+import Link from "next/link";
+
 export default function VerifyEmailComponent() {
   const [loading, setLoading] = useState(false);
   const auth = getAuth();
@@ -34,9 +36,9 @@ export default function VerifyEmailComponent() {
         confirmar seu e-mail.
       </p>
       <div className="buttons">
-        <a href="/profile" className="btn">
+        <Link href="/profile" className="btn">
           Cancelar
-        </a>
+        </Link>
         <button
           className="btn active"
           onClick={handleSendVerificationEmail}
