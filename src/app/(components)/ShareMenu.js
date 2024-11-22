@@ -103,5 +103,5 @@ const ShareMenu = forwardRef(({ text, path, side = "left" }, ref) => {
     </>
   );
 });
-
+ShareMenu.displayName = "ShareMenu";
 export default ShareMenu;
