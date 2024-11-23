@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense, useState, useEffect } from "react";
 import { auth, db } from "@/firebase";
 import {
   Users,
@@ -22,12 +23,39 @@ import {
   where,
   endAt,
 } from "firebase/firestore";
-import Cookies from "js-cookie";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import PostCard from "./(components)/PostCard";
-import Link from "next/link";
+
+function LoadingFallback() {
+  return <p>Carregando...</p>;
+}
+
+function PostsContainer({
+  posts,
+  likedPosts,
+  savedPosts,
+  handleLikePostChange,
+  handleSavePostChange,
+}) {
+  return posts.length ? (
+    posts
+      .filter((p) => !p.isDraft)
+      .map((post) => (
+        <PostCard
+          key={post.id}
+          author={post.author}
+          post={post}
+          likedPosts={likedPosts}
+          savedPosts={savedPosts}
+          onLikePostChange={handleLikePostChange}
+          onSavePostChange={handleSavePostChange}
+        />
+      ))
+  ) : (
+    <p>Nenhuma postagem encontrada</p>
+  );
+}
 
 export default function Home() {
   const [posts, setPosts] = useState([]);
@@ -71,7 +99,6 @@ export default function Home() {
         setSavedPosts(new Set(userData.savedPosts || []));
         setLikedPosts(new Set(userData.likedPosts || []));
         setFollowing(userData.following || []);
-        Cookies.set("user", JSON.stringify(userData), { expires: 7 });
       }
     } catch (error) {
       toast.error("Erro ao carregar dados do usuário");
@@ -111,7 +138,6 @@ export default function Home() {
       ]);
     } catch (error) {
       toast.error("Erro ao buscar postagens");
-      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -154,7 +180,6 @@ export default function Home() {
         setPosts([]);
       }
     } catch (error) {
-      console.error(error);
       toast.error("Erro ao buscar postagens dos seguidos");
     } finally {
       setLoading(false);
@@ -165,9 +190,9 @@ export default function Home() {
     if (page > 1 && posts.length > 0) {
       const lastPost = posts[posts.length - 1];
       const lastPostDoc = await getDoc(doc(db, "posts", lastPost.id));
-      return query(q, startAfter(lastPostDoc)); // Retorna a Query diretamente
+      return query(q, startAfter(lastPostDoc));
     }
-    return q; // Retorna a Query para a primeira página
+    return q;
   };
 
   const mapPosts = async (querySnapshot) => {
@@ -190,7 +215,10 @@ export default function Home() {
           uid: authorData.uid,
           photoURL:
             authorData.photoURL ||
-            `https://eu.ui-avatars.com/api/?name=${authorData.username.replaceAll(" ", "+")}&size=250`,
+            `https://eu.ui-avatars.com/api/?name=${authorData.username.replaceAll(
+              " ",
+              "+"
+            )}&size=250`,
         };
       }
       return {};
@@ -199,37 +227,28 @@ export default function Home() {
     }
   };
 
-  const handleSearch = async () => {
-    const newUrl = `/?tab=${currentTab}&q=${searchTerm}`;
+  const handleSearch = () => {
+    const newUrl = `/?tab=${tab}&q=${searchTerm}`;
     router.push(newUrl);
-    if (searchTerm) {
-      await fetchPosts(1, searchTerm);
+    if (tab === "following") {
+      fetchFollowingPosts(1, searchTerm);
     } else {
-      await fetchPosts(1);
+      fetchPosts(1, searchTerm);
     }
   };
 
   const handleSavePostChange = (postId, isSaved) => {
     setSavedPosts((prevSavedPosts) => {
       const updatedSavedPosts = new Set(prevSavedPosts);
-      if (isSaved) {
-        updatedSavedPosts.add(postId);
-      } else {
-        updatedSavedPosts.delete(postId);
-      }
+      isSaved ? updatedSavedPosts.add(postId) : updatedSavedPosts.delete(postId);
       return updatedSavedPosts;
     });
   };
 
-  // Função para atualizar posts curtidos
   const handleLikePostChange = (postId, isLiked) => {
     setLikedPosts((prevLikedPosts) => {
       const updatedLikedPosts = new Set(prevLikedPosts);
-      if (isLiked) {
-        updatedLikedPosts.add(postId);
-      } else {
-        updatedLikedPosts.delete(postId);
-      }
+      isLiked ? updatedLikedPosts.add(postId) : updatedLikedPosts.delete(postId);
       return updatedLikedPosts;
     });
   };
@@ -239,7 +258,7 @@ export default function Home() {
       {auth.currentUser && (
         <section className="tabs top">
           <button
-            className={`icon-label ${tab == "explore" && "active"}`}
+            className={`icon-label ${tab === "explore" && "active"}`}
             onClick={() => {
               setTab("explore");
               router.push("/?tab=explore");
@@ -248,7 +267,7 @@ export default function Home() {
             <Compass /> Explorar
           </button>
           <button
-            className={`icon-label ${tab == "following" && "active"}`}
+            className={`icon-label ${tab === "following" && "active"}`}
             onClick={() => {
               setTab("following");
               router.push("/?tab=following");
@@ -277,32 +296,19 @@ export default function Home() {
           className="icon"
           onClick={() => setOrder(order === "asc" ? "desc" : "asc")}
         >
-          <ArrowDown style={{ rotate: order === "asc" ? 0 : 180 }} />
+          <ArrowDown style={{ transform: order === "asc" && "rotate(180deg)" }} />
         </button>
       </section>
-      <div className="posts-container">
-        {loading ? (
-          <p>Carregando...</p>
-        ) : posts.length ? (
-          posts
-            .filter((p) => p.isDraft == false)
-            .map((post) => (
-              <PostCard
-                key={post.id}
-                author={post.author}
-                post={post}
-                likedPosts={likedPosts}
-                savedPosts={savedPosts}
-                setLikedPosts={setLikedPosts}
-                setSavedPosts={setSavedPosts}
-                onSavePostChange={handleSavePostChange}
-                onLikePostChange={handleLikePostChange}
-              />
-            ))
-        ) : (
-          <p>Nenhuma postagem encontrada</p>
-        )}
-      </div>
+
+      <Suspense fallback={<LoadingFallback />}>
+        <PostsContainer
+          posts={posts}
+          likedPosts={likedPosts}
+          savedPosts={savedPosts}
+          handleLikePostChange={handleLikePostChange}
+          handleSavePostChange={handleSavePostChange}
+        />
+      </Suspense>
     </>
   );
 }

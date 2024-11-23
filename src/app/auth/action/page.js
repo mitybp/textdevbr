@@ -1,18 +1,18 @@
 "use client";
+
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  getAuth,
   confirmPasswordReset,
   verifyPasswordResetCode,
   applyActionCode,
   signOut,
+  getAuth,
 } from "firebase/auth";
-import toast from "react-hot-toast";
-import { Eye, EyeClosed } from "@phosphor-icons/react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/firebase";
-
+import toast from "react-hot-toast";
+import { Eye, EyeClosed } from "@phosphor-icons/react";
 import Link from "next/link";
 
 export default function AuthAction() {
@@ -46,7 +46,7 @@ export default function AuthAction() {
       signOut(auth);
       router.push("/auth/login");
     } catch (error) {
-      toast.error("Erro ao redefinir a senha! Verifique o código ou tente novamente.");
+      toast.error("Erro ao redefinir a senha!");
       console.error(error);
     } finally {
       setLoading(false);
@@ -79,7 +79,6 @@ export default function AuthAction() {
     try {
       await applyActionCode(auth, oobCode);
 
-      // Verifique se o usuário está logado antes de atualizar o Firestore
       if (auth.currentUser) {
         await updateDoc(doc(db, "users", auth.currentUser.uid), {
           emailVerified: true,
@@ -95,53 +94,34 @@ export default function AuthAction() {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    try {
-      // Lógica para deletar a conta do usuário
-      toast.success("Conta deletada com sucesso!");
-      router.push("/");
-    } catch (error) {
-      toast.error("Erro ao deletar a conta!");
-      console.error(error);
-    }
-  };
-
   const renderForm = () => {
     switch (mode) {
       case "resetPassword":
         return (
           <section className="form">
-            <h1>Redefinir senha</h1>
+            <h1>Redefinir Senha</h1>
             <div>
               <div className="input">
                 <input
                   type={pw1Visible ? "text" : "password"}
+                  placeholder="Nova senha"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Nova senha"
                   disabled={loading}
                 />
-                <button
-                  className="icon"
-                  onClick={() => setPw1Visible(!pw1Visible)}
-                  disabled={loading}
-                >
+                <button onClick={() => setPw1Visible(!pw1Visible)} disabled={loading}>
                   {pw1Visible ? <EyeClosed /> : <Eye />}
                 </button>
               </div>
               <div className="input">
                 <input
                   type={pw2Visible ? "text" : "password"}
+                  placeholder="Confirme a senha"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirme a nova senha"
                   disabled={loading}
                 />
-                <button
-                  className="icon"
-                  onClick={() => setPw2Visible(!pw2Visible)}
-                  disabled={loading}
-                >
+                <button onClick={() => setPw2Visible(!pw2Visible)} disabled={loading}>
                   {pw2Visible ? <EyeClosed /> : <Eye />}
                 </button>
               </div>
@@ -150,12 +130,8 @@ export default function AuthAction() {
               <Link href="/auth/login" className="btn">
                 Cancelar
               </Link>
-              <button
-                className="active"
-                onClick={handleResetPassword}
-                disabled={loading}
-              >
-                Redefinir senha
+              <button onClick={handleResetPassword} disabled={loading}>
+                Redefinir Senha
               </button>
             </div>
           </section>
@@ -169,7 +145,7 @@ export default function AuthAction() {
               <Link href="/auth/login" className="btn">
                 Cancelar
               </Link>
-              <button className="active" onClick={handleRecoverEmail} disabled={loading}>
+              <button onClick={handleRecoverEmail} disabled={loading}>
                 Recuperar Email
               </button>
             </div>
@@ -184,23 +160,8 @@ export default function AuthAction() {
               <Link href="/auth/login" className="btn">
                 Cancelar
               </Link>
-              <button className="active" onClick={handleVerifyEmail} disabled={loading}>
+              <button onClick={handleVerifyEmail} disabled={loading}>
                 Verificar Email
-              </button>
-            </div>
-          </section>
-        );
-
-      case "deleteAccount":
-        return (
-          <section className="form">
-            <h1>Deletar Conta</h1>
-            <div className="buttons">
-              <Link href="/" className="btn">
-                Cancelar
-              </Link>
-              <button className="btn danger" onClick={handleDeleteAccount}>
-                Deletar minha conta
               </button>
             </div>
           </section>

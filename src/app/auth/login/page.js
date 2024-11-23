@@ -1,4 +1,5 @@
 "use client";
+
 import { auth, db, googleProvider } from "@/firebase";
 import { Eye, EyeClosed, GoogleLogo } from "@phosphor-icons/react";
 import {
@@ -8,12 +9,16 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import toast from "react-hot-toast";
-
 import Link from "next/link";
 
-export default function Login() {
+// Fallback de carregamento
+function LoadingFallback() {
+  return <div className="loading">Carregando...</div>;
+}
+
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -101,33 +106,20 @@ export default function Login() {
     );
     const username = await ensureUniqueUsername(baseUsername);
     return {
-      description: "",
       email: user.email,
       emailVerified: user.emailVerified,
       joinedAt: Timestamp.now(),
       username,
       photoURL: user.photoURL || null,
       uid: user.uid,
-      website: "",
-      social: {
-        facebook: "",
-        linkedin: "",
-        github: "",
-        threads: "",
-        twitter: "",
-        whatsapp: "",
-      },
-      savedPosts: [],
-      likedPosts: [],
-      likedComments: [],
       followers: [],
       following: [],
     };
   };
 
   const formatUsername = (name) => {
-    if(["settings", "new", "activity"].includes(name)) {
-      name
+    if (["settings", "new", "activity"].includes(name)) {
+      name += generateRandomString(4);
     }
     return name
       .normalize("NFD")
@@ -146,19 +138,18 @@ export default function Login() {
       userDoc = await getDoc(doc(db, "usernames", username));
     }
 
+    await setDoc(doc(db, "usernames", username), { uid: auth.currentUser.uid });
     return username;
   };
 
   const generateRandomString = (length) => {
     const characters =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let result = "";
-    for (let i = 0; i < length; i++) {
-      result += characters.charAt(
-        Math.floor(Math.random() * characters.length)
-      );
-    }
-    return result;
+    return Array.from({ length })
+      .map(
+        () => characters.charAt(Math.floor(Math.random() * characters.length))
+      )
+      .join("");
   };
 
   return (
@@ -208,5 +199,13 @@ export default function Login() {
         </div>
       </div>
     </section>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <LoginForm />
+    </Suspense>
   );
 }

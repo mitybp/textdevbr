@@ -1,18 +1,18 @@
 "use client";
-import PostCard from "@/(components)/PostCard";
-import { auth, db } from "@/firebase";
-import { BookmarksSimple, Heart, HouseSimple } from "@phosphor-icons/react";
+
+import { Suspense, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, Suspense } from "react";
 import toast from "react-hot-toast";
+import PostCard from "@/(components)/PostCard";
+import { auth, db } from "@/firebase";
+import { Heart, BookmarksSimple } from "@phosphor-icons/react";
+import Link from "next/link";
 
-const Activity = () => {
+const ActivityContent = ({ initialTab }) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") || "liked";
-  const [tab, setTab] = useState(initialTab);
+  const [tab, setTab] = useState(initialTab || "liked");
 
   const [likedPosts, setLikedPosts] = useState(new Set());
   const [savedPosts, setSavedPosts] = useState(new Set());
@@ -32,7 +32,7 @@ const Activity = () => {
       }
     });
     return () => unsubscribe();
-  }, [router, fetchUserActivity]);
+  }, [router]);
 
   const fetchUserActivity = async (uid) => {
     try {
@@ -72,13 +72,11 @@ const Activity = () => {
       const postData = postDoc.data();
 
       if (!postData.author) {
-        // Retorna post com autor desconhecido
         return { ...postData, author: { username: "Anônimo", uid: null } };
       }
 
       const authorDoc = await getDoc(doc(db, "users", postData.author));
       if (!authorDoc.exists()) {
-        // Retorna post com autor desconhecido se não conseguir buscar o autor
         return { ...postData, author: { username: "Anônimo", uid: null } };
       }
 
@@ -101,55 +99,24 @@ const Activity = () => {
     router.push(`/activity/?tab=${newTab}`);
   };
 
-  // Funções que receberão mudanças dos PostCards
-  const handleLikePostChange = (postId, isLiked) => {
-    setLikedPostIdsSet((prev) => {
-      const newSet = new Set(prev);
-      isLiked ? newSet.add(postId) : newSet.delete(postId);
-      return newSet;
-    });
-  };
-
-  const handleSavePostChange = (postId, isSaved) => {
-    setSavedPostIdsSet((prev) => {
-      const newSet = new Set(prev);
-      isSaved ? newSet.add(postId) : newSet.delete(postId);
-      return newSet;
-    });
-  };
-
-  // Passe essas funções para os PostCards ao renderizar
   const renderPosts = (postsSet) => {
     const postsArray = Array.from(postsSet);
     return postsArray.length === 0 ? (
       <section className="explore">
         <p>Nenhuma postagem {tab === "liked" ? "curtida" : "salva"} ainda!</p>
         <Link href="/" className="btn active icon-label">
-          <HouseSimple />
-          Explorar postagens na página inicial
+          Explorar
         </Link>
       </section>
     ) : (
       postsArray.map((post) => (
-        <PostCard
-          key={post.id}
-          post={post}
-          author={post.author}
-          likedPosts={likedPostIdsSet}
-          savedPosts={savedPostIdsSet}
-          setLikedPosts={setLikedPosts}
-          setSavedPosts={setSavedPosts}
-          isProfile={false}
-          onLikePostChange={handleLikePostChange}
-          onSavePostChange={handleSavePostChange}
-        />
+        <PostCard key={post.id} post={post} />
       ))
     );
   };
 
   return (
-    <Suspense>
-      <h1>Atividade</h1>
+    <>
       <section className="tabs">
         <button
           className={`icon-label ${tab === "liked" ? "active" : ""}`}
@@ -168,20 +135,21 @@ const Activity = () => {
       </section>
 
       <section className="posts">
-        {loading ? (
-          <p>Carregando...</p>
-        ) : (
-          <>
-            {tab === "liked"
-              ? renderPosts(likedPosts)
-              : renderPosts(savedPosts)}
-          </>
-        )}
+        {loading ? <p>Carregando...</p> : tab === "liked" ? renderPosts(likedPosts) : renderPosts(savedPosts)}
       </section>
-    </Suspense>
+    </>
   );
 };
 
-import Link from "next/link";
+const Activity = () => {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab");
+
+  return (
+    <Suspense fallback={<p>Carregando atividade...</p>}>
+      <ActivityContent initialTab={initialTab} />
+    </Suspense>
+  );
+};
 
 export default Activity;
