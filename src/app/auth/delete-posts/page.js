@@ -8,7 +8,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 
@@ -69,7 +69,7 @@ export default function DeletePosts() {
     }
   };
 
-  const DeletePostsForm = () => (
+  return (
     <section className="form">
       <h1>Deletar postagens</h1>
       <div className="buttons">
@@ -85,11 +85,5 @@ export default function DeletePosts() {
         </button>
       </div>
     </section>
-  );
-
-  return (
-    <Suspense fallback={<p>Carregando...</p>}>
-      <DeletePostsForm />
-    </Suspense>
   );
 }

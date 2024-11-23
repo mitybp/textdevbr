@@ -102,7 +102,7 @@ const handleFileUpload = async (e, user, setPhotoURL) => {
 };
 
 export default function ProfileEdit() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(localStorage.getItem("user"));
   const [description, setDescription] = useState("");
   const [website, setWebsite] = useState("");
   const [username, setUsername] = useState("");
@@ -132,24 +132,6 @@ export default function ProfileEdit() {
       document.removeEventListener("click", handleClickOutside);
     };
   }, []);
-
-useEffect(() => {
-  const storedUser = localStorage.getItem("user");
-  if (storedUser) {
-    setUser(JSON.parse(storedUser));
-  } else {
-    onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        localStorage.setItem("user", JSON.stringify(currentUser));
-      } else {
-        toast.error("Usuário não autenticado. Faça login novamente.");
-        router.push("/auth/login");
-      }
-    });
-  }
-}, [router]);
-
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
