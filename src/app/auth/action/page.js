@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   getAuth,
@@ -46,7 +46,9 @@ export default function AuthAction() {
       signOut(auth);
       router.push("/auth/login");
     } catch (error) {
-      toast.error("Erro ao redefinir a senha! Verifique o código ou tente novamente.");
+      toast.error(
+        "Erro ao redefinir a senha! Verifique o código ou tente novamente."
+      );
       console.error(error);
     } finally {
       setLoading(false);
@@ -169,7 +171,11 @@ export default function AuthAction() {
               <Link href="/auth/login" className="btn">
                 Cancelar
               </Link>
-              <button className="active" onClick={handleRecoverEmail} disabled={loading}>
+              <button
+                className="active"
+                onClick={handleRecoverEmail}
+                disabled={loading}
+              >
                 Recuperar Email
               </button>
             </div>
@@ -184,7 +190,11 @@ export default function AuthAction() {
               <Link href="/auth/login" className="btn">
                 Cancelar
               </Link>
-              <button className="active" onClick={handleVerifyEmail} disabled={loading}>
+              <button
+                className="active"
+                onClick={handleVerifyEmail}
+                disabled={loading}
+              >
                 Verificar Email
               </button>
             </div>
@@ -211,5 +221,5 @@ export default function AuthAction() {
     }
   };
 
-  return <>{renderForm()}</>;
+  return <Suspense fallback={<p>Carregando...</p>}>{renderForm()}</Suspense>;
 }

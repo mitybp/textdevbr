@@ -9,7 +9,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import toast from "react-hot-toast";
 
 import Link from "next/link";
@@ -142,58 +142,60 @@ export default function Login() {
     const characters =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     return Array.from({ length })
-      .map(
-        () => characters.charAt(Math.floor(Math.random() * characters.length))
+      .map(() =>
+        characters.charAt(Math.floor(Math.random() * characters.length))
       )
       .join("");
   };
 
   return (
-    <section className="form">
-      <h1>Login</h1>
-      <button
-        onClick={handleGoogleLogin}
-        disabled={loading}
-        className="icon-label active"
-      >
-        Continuar com Google
-        <GoogleLogo />
-      </button>
-      <hr />
-      <div>
-        <div className="input">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            disabled={loading}
-          />
-        </div>
-        <div className="input">
-          <input
-            type={pwVisible ? "text" : "password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Senha"
-            disabled={loading}
-          />
-          <button className="icon" onClick={() => setPwVisible(!pwVisible)}>
-            {pwVisible ? <EyeClosed /> : <Eye />}
-          </button>
-        </div>
+    <Suspense fallback={<p>Carregando...</p>}>
+      <section className="form">
+        <h1>Login</h1>
         <button
-          onClick={handleEmailLogin}
+          onClick={handleGoogleLogin}
           disabled={loading}
-          className="active"
+          className="icon-label active"
         >
-          Entrar
+          Continuar com Google
+          <GoogleLogo />
         </button>
+        <hr />
         <div>
-          <Link href="/auth/reset-password/">Esqueceu sua senha?</Link>
-          <Link href="/auth/recover-email/">Esqueceu o email?</Link>
+          <div className="input">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              disabled={loading}
+            />
+          </div>
+          <div className="input">
+            <input
+              type={pwVisible ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Senha"
+              disabled={loading}
+            />
+            <button className="icon" onClick={() => setPwVisible(!pwVisible)}>
+              {pwVisible ? <EyeClosed /> : <Eye />}
+            </button>
+          </div>
+          <button
+            onClick={handleEmailLogin}
+            disabled={loading}
+            className="active"
+          >
+            Entrar
+          </button>
+          <div>
+            <Link href="/auth/reset-password/">Esqueceu sua senha?</Link>
+            <Link href="/auth/recover-email/">Esqueceu o email?</Link>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </Suspense>
   );
 }

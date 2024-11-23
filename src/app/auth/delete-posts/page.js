@@ -8,7 +8,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 
@@ -70,20 +70,25 @@ export default function DeletePosts() {
   };
 
   return (
-    <section className="form">
-      <h1>Deletar postagens</h1>
-      <div className="buttons">
-        <Link href={searchParams.get("redirect") || "/"} className="btn active">
-          Cancelar
-        </Link>
-        <button
-          onClick={handleDeletePosts}
-          className="danger"
-          disabled={loading}
-        >
-          {loading ? "Processando..." : "Deletar postagens"}
-        </button>
-      </div>
-    </section>
+    <Suspense fallback={<p>Carregando...</p>}>
+      <section className="form">
+        <h1>Deletar postagens</h1>
+        <div className="buttons">
+          <Link
+            href={searchParams.get("redirect") || "/"}
+            className="btn active"
+          >
+            Cancelar
+          </Link>
+          <button
+            onClick={handleDeletePosts}
+            className="danger"
+            disabled={loading}
+          >
+            {loading ? "Processando..." : "Deletar postagens"}
+          </button>
+        </div>
+      </section>
+    </Suspense>
   );
 }

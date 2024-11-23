@@ -24,7 +24,7 @@ import {
 } from "firebase/firestore";
 import Cookies from "js-cookie";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import PostCard from "./(components)/PostCard";
 import Link from "next/link";
@@ -258,28 +258,30 @@ export default function Home() {
           </button>
         </section>
       )}
-      <section className="search">
-        <div className="input_x">
-          <input
-            type="text"
-            placeholder="Pesquisar"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <button className="icon">
-            <X />
+      <Suspense fallback={<div>Loading...</div>}>
+        <section className="search">
+          <div className="input_x">
+            <input
+              type="text"
+              placeholder="Pesquisar"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <button className="icon">
+              <X />
+            </button>
+          </div>
+          <button onClick={handleSearch} className="icon active">
+            <MagnifyingGlass />
           </button>
-        </div>
-        <button onClick={handleSearch} className="icon active">
-          <MagnifyingGlass />
-        </button>
-        <button
-          className="icon"
-          onClick={() => setOrder(order === "asc" ? "desc" : "asc")}
-        >
-          <ArrowDown style={{ rotate: order === "asc" ? 0 : 180 }} />
-        </button>
-      </section>
+          <button
+            className="icon"
+            onClick={() => setOrder(order === "asc" ? "desc" : "asc")}
+          >
+            <ArrowDown style={{ rotate: order === "asc" ? 0 : 180 }} />
+          </button>
+        </section>
+      </Suspense>
       <div className="posts-container">
         {loading ? (
           <p>Carregando...</p>

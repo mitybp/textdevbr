@@ -149,7 +149,7 @@ const Activity = () => {
   };
 
   return (
-    <Suspense>
+    <Suspense fallback={<p>Carregando...</p>}>
       <h1>Atividade</h1>
       <section className="tabs">
         <button
