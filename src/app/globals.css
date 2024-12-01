@@ -440,7 +440,7 @@ section.user_info {
   flex-direction: column;
 
   .user_header {
-    display: flex;
+    display: flex !important;
     flex-direction: row;
     gap: 30px;
     margin-bottom: 10px;
@@ -457,11 +457,11 @@ section.user_info {
     }
     .user_header_info {
       width: 100%;
-      display: flex;
+      display: flex !important;
       gap: 6px;
       flex-direction: column;
       small {
-        display: flex;
+        display: flex !important;
         flex-direction: row;
         gap: 4px;
         align-items: center;
@@ -471,14 +471,14 @@ section.user_info {
       }
 
       .user_header_info_social {
-        display: flex;
+        display: flex !important;
         gap: 4px;
       }
     }
 
     .user_header_sidebar {
-      display: flex;
-      flex-direction: column;
+      display: flex !important;
+      flex-direction: column !important;
       justify-content: flex-start;
       align-items: center;
       width: 30px;
@@ -680,6 +680,7 @@ section.form {
         display: flex;
         align-items: center;
         justify-content: center;
+        text-align: center;
         gap: 6px;
         border: 1px solid var(--gray);
         border-radius: 15px;
@@ -1007,6 +1008,7 @@ div.post_card {
       display: flex;
       align-items: center;
       gap: 4px;
+      flex-wrap: wrap;
       .post_card_author_photo {
         width: 16px;
         height: 16px;
@@ -1084,6 +1086,14 @@ small {
     padding-inline: 6px;
     border-radius: 6px;
     width: min-content;
+  }
+  .gray, &.gray{
+    background-color: var(--secondary-gray);
+    color: var(--text);
+    padding-inline: 6px;
+    border-radius: 6px;
+    width: min-content;
+    min-width: 20px;
   }
 }
 

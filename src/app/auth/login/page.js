@@ -100,16 +100,27 @@ export default function Login() {
     const baseUsername = formatUsername(
       user.displayName || user.email.split("@")[0]
     );
-    const username = await ensureUniqueUsername(baseUsername);
     return {
       email: user.email,
       emailVerified: user.emailVerified,
       joinedAt: Timestamp.now(),
-      username,
+      username: baseUsername,
       photoURL: user.photoURL || null,
       uid: user.uid,
       followers: [],
       following: [],
+      description: "",
+      likedPosts: [],
+      savedPosts: [],
+      social: {
+        facebook: "",
+        github: "",
+        instagram: "",
+        threads: "",
+        twitter: "",
+        linkedin: "",
+      },
+      website: "",
     };
   };
 
@@ -123,19 +134,6 @@ export default function Login() {
       .replace(/\s+/g, "-")
       .toLowerCase()
       .replace(/[!?°,°#]/g, "");
-  };
-
-  const ensureUniqueUsername = async (baseUsername) => {
-    let username = baseUsername;
-    let userDoc = await getDoc(doc(db, "usernames", username));
-
-    while (userDoc.exists()) {
-      username = `${baseUsername}${generateRandomString(5)}`;
-      userDoc = await getDoc(doc(db, "usernames", username));
-    }
-
-    await setDoc(doc(db, "usernames", username), { uid: auth.currentUser.uid });
-    return username;
   };
 
   const generateRandomString = (length) => {

@@ -9,6 +9,7 @@ import {
   GlobeSimple,
   InstagramLogo,
   Link,
+  LinkedinLogo,
   ListBullets,
   ListNumbers,
   Pencil,
@@ -25,7 +26,6 @@ import {
   ThreadsLogo,
   TwitterLogo,
   UploadSimple,
-  WhatsappLogo,
 } from "@phosphor-icons/react";
 import { updateProfile } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
@@ -395,7 +395,12 @@ export default function ProfileEdit() {
               name: "Threads",
               icon: <ThreadsLogo />,
               url: "https://threads.net/",
-            }
+            },
+            {
+              name: "LinkedIn",
+              icon: <LinkedinLogo />,
+              url: "https://linkedin.com/",
+            },
           ].map((s) => (
             <div key={s.name} className="input">
               <a

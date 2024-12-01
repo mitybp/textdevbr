@@ -35,7 +35,7 @@ import {
 } from "firebase/firestore";
 import { marked } from "marked";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { notFound, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -100,15 +100,16 @@ export default function UserPage({ params }) {
       );
       const userSnap = await getDocs(userRef);
 
+      // Redireciona para 404 se o usuário não for encontrado
       if (userSnap.empty) {
         toast.error("Usuário não encontrado!");
-        setUser(null);
+        router.push("/404");
         return;
       }
 
       const userData = userSnap.docs[0].data();
       const userUid = userData.uid;
-      const userDescription = marked(userData.description);
+      const userDescription = marked(userData?.description || "");
 
       const postsRef = query(
         collection(db, "posts"),
@@ -130,7 +131,10 @@ export default function UserPage({ params }) {
         setIsFollowing(true);
       }
     } catch (error) {
+      console.error("Erro ao carregar os dados do usuário:", error);
       toast.error("Erro ao carregar os dados do usuário!");
+      router.push("/404"); // Redireciona para 404 em caso de erro
+      return;
     }
   };
 
@@ -308,16 +312,10 @@ export default function UserPage({ params }) {
               <div className="left">
                 {isOwnProfile ? (
                   <>
-                    <Link
-                      href="/settings/profile"
-                      className="btn icon-label"
-                    >
+                    <Link href="/settings/profile" className="btn icon-label">
                       Editar perfil <PencilSimple />
                     </Link>
-                    <Link
-                      href="/settings/account"
-                      className="btn icon-label"
-                    >
+                    <Link href="/settings/account" className="btn icon-label">
                       Configurações <Gear />
                     </Link>
                   </>
@@ -334,7 +332,7 @@ export default function UserPage({ params }) {
             <ShareMenu
               ref={shareRef}
               text={`Veja o perfil do(a) ${user.name} no text.dev.br!`}
-              path={"u/"+user.username}
+              path={"u/" + user.username}
             />
           </div>
         </div>

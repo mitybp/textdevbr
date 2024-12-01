@@ -152,15 +152,14 @@ export default function Activity({ searchParams }) {
           className={`icon-label ${tab === "liked" ? "active" : ""}`}
           onClick={() => handleTabChange("liked")}
         >
-          <Heart weight={tab === "liked" ? "fill" : "regular"} /> Curtidos (
-          {likedPostIdsSet.size})
+          <Heart weight={tab === "liked" ? "fill" : "regular"} /> Curtidos <small className="gray">{likedPostIdsSet.size}</small>
         </button>
         <button
           className={`icon-label ${tab === "saved" ? "active" : ""}`}
           onClick={() => handleTabChange("saved")}
         >
           <BookmarksSimple weight={tab === "saved" ? "fill" : "regular"} />{" "}
-          Salvos ({savedPostIdsSet.size})
+          Salvos <small className="gray">{savedPostIdsSet.size}</small>
         </button>
       </section>
 
