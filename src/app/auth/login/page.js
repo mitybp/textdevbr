@@ -1,5 +1,3 @@
-"use client";
-
 import { auth, db, googleProvider } from "@/firebase";
 import { Eye, EyeClosed, GoogleLogo } from "@phosphor-icons/react";
 import {
@@ -8,19 +6,27 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-
 import Link from "next/link";
 
-export default function Login() {
+export async function getServerSideProps(context) {
+  const { redirect } = context.query;
+
+  return {
+    props: {
+      redirect: redirect || "/",
+    },
+  };
+}
+
+export default function Login({ redirect }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [pwVisible, setPwVisible] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const handleGoogleLogin = () =>
     authenticateWithProvider(signInWithPopup, googleProvider);
@@ -39,7 +45,7 @@ export default function Login() {
       }
 
       toast.success("Login com Google realizado com sucesso!");
-      router.push(searchParams.get("redirect") || "/");
+      router.push(redirect);
     } catch (error) {
       toast.error("Erro ao fazer login com Google.");
     } finally {
@@ -54,7 +60,7 @@ export default function Login() {
       setLoading(true);
       await signInWithEmailAndPassword(auth, email, password);
       toast.success("Login realizado com sucesso!");
-      router.push(searchParams.get("redirect") || "/");
+      router.push(redirect);
     } catch (error) {
       if (error.code === "auth/user-not-found") {
         await registerNewUser(email, password);
@@ -90,7 +96,7 @@ export default function Login() {
       await setDoc(doc(db, "users", user.uid), userData);
 
       toast.success("Conta criada e login realizado com sucesso!");
-      router.push(searchParams.get("redirect") || "/");
+      router.push(redirect);
     } catch (error) {
       toast.error("Erro ao criar conta.");
     }
@@ -149,53 +155,51 @@ export default function Login() {
   };
 
   return (
-    <Suspense fallback={<p>Carregando...</p>}>
-      <section className="form">
-        <h1>Login</h1>
-        <button
-          onClick={handleGoogleLogin}
-          disabled={loading}
-          className="icon-label active"
-        >
-          Continuar com Google
-          <GoogleLogo />
-        </button>
-        <hr />
-        <div>
-          <div className="input">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              disabled={loading}
-            />
-          </div>
-          <div className="input">
-            <input
-              type={pwVisible ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Senha"
-              disabled={loading}
-            />
-            <button className="icon" onClick={() => setPwVisible(!pwVisible)}>
-              {pwVisible ? <EyeClosed /> : <Eye />}
-            </button>
-          </div>
-          <button
-            onClick={handleEmailLogin}
+    <section className="form">
+      <h1>Login</h1>
+      <button
+        onClick={handleGoogleLogin}
+        disabled={loading}
+        className="icon-label active"
+      >
+        Continuar com Google
+        <GoogleLogo />
+      </button>
+      <hr />
+      <div>
+        <div className="input">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
             disabled={loading}
-            className="active"
-          >
-            Entrar
-          </button>
-          <div>
-            <Link href="/auth/reset-password/">Esqueceu sua senha?</Link>
-            <Link href="/auth/recover-email/">Esqueceu o email?</Link>
-          </div>
+          />
         </div>
-      </section>
-    </Suspense>
+        <div className="input">
+          <input
+            type={pwVisible ? "text" : "password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Senha"
+            disabled={loading}
+          />
+          <button className="icon" onClick={() => setPwVisible(!pwVisible)}>
+            {pwVisible ? <EyeClosed /> : <Eye />}
+          </button>
+        </div>
+        <button
+          onClick={handleEmailLogin}
+          disabled={loading}
+          className="active"
+        >
+          Entrar
+        </button>
+        <div>
+          <Link href="/auth/reset-password/">Esqueceu sua senha?</Link>
+          <Link href="/auth/recover-email/">Esqueceu o email?</Link>
+        </div>
+      </div>
+    </section>
   );
 }

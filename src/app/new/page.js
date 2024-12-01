@@ -151,6 +151,11 @@ const New = () => {
   return (
     <>
       <h1>Nova postagem</h1>
+      <div className="alert">
+        <p>Olá, escritor(a) 👋!</p>
+        <p>Para manter nossa comunidade organizada 🗃️ e com conteúdos relevantes, faça questão de ler o <a href='/code-of-conduct'>Código de Conduta</a> 📄 e o <a href='/u/dimitri.pusch/manual-de-postagem'>Manual de Postagem</a>.</p>
+        <p>Obrigado e boa postagem!</p>
+      </div>
       <section className="form">
         <div className="input">
           <label htmlFor="title">Título</label>
@@ -377,6 +382,5 @@ const New = () => {
     </>
   );
 };
-
 
 export default New;

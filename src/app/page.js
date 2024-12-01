@@ -5,8 +5,8 @@ import {
   Users,
   Compass,
   MagnifyingGlass,
-  ArrowDown,
   X,
+  ArrowDown,
 } from "@phosphor-icons/react";
 import { onAuthStateChanged } from "firebase/auth";
 import {
@@ -18,16 +18,13 @@ import {
   orderBy,
   query,
   startAfter,
-  startAt,
   where,
   endAt,
 } from "firebase/firestore";
-import Cookies from "js-cookie";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import PostCard from "./(components)/PostCard";
-import Link from "next/link";
 
 export default function Home() {
   const [posts, setPosts] = useState([]);
@@ -37,16 +34,14 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [order, setOrder] = useState("desc");
   const [loading, setLoading] = useState(false);
-  const [postsLimit] = useState(50);
+  const [hasMore, setHasMore] = useState(true);
   const [tab, setTab] = useState("explore");
 
+  const observerRef = useRef();
   const searchParams = useSearchParams();
   const router = useRouter();
   const currentTab = searchParams.get("tab") || "explore";
   const currentSearch = searchParams.get("q") || "";
-  const currentPage = searchParams.get("page")
-    ? parseInt(searchParams.get("page"))
-    : 1;
 
   useEffect(() => {
     onAuthStateChanged(auth, (user) => {
@@ -56,12 +51,33 @@ export default function Home() {
 
   useEffect(() => {
     setSearchTerm(currentSearch);
+    setPosts([]);
+    setHasMore(true);
     if (tab === "following" || currentTab === "following") {
-      fetchFollowingPosts(currentPage, currentSearch);
+      fetchFollowingPosts(currentSearch);
     } else {
-      fetchPosts(currentPage, currentSearch);
+      fetchPosts(currentSearch);
     }
-  }, [tab, order, currentPage, currentSearch]);
+  }, [tab, order, currentSearch]);
+
+  useEffect(() => {
+    if (!loading && hasMore) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            if (tab === "following" || currentTab === "following") {
+              fetchFollowingPosts(currentSearch);
+            } else {
+              fetchPosts(currentSearch);
+            }
+          }
+        },
+        { threshold: 1.0 }
+      );
+      if (observerRef.current) observer.observe(observerRef.current);
+      return () => observer.disconnect();
+    }
+  }, [loading, hasMore, tab, currentSearch]);
 
   const fetchUserData = async (user) => {
     try {
@@ -71,16 +87,15 @@ export default function Home() {
         setSavedPosts(new Set(userData.savedPosts || []));
         setLikedPosts(new Set(userData.likedPosts || []));
         setFollowing(userData.following || []);
-        Cookies.set("user", JSON.stringify(userData), { expires: 7 });
       }
     } catch (error) {
       toast.error("Erro ao carregar dados do usuário");
     }
   };
 
-  const fetchPosts = async (page = 1, search = "") => {
+  const fetchPosts = async (search = "") => {
+    if (loading || !hasMore) return;
     setLoading(true);
-    setTab("explore");
     try {
       let q;
       if (search) {
@@ -89,26 +104,33 @@ export default function Home() {
           orderBy("titleLowerCase"),
           startAt(search.toLowerCase()),
           endAt(search.toLowerCase() + "\uf8ff"),
-          limit(postsLimit)
+          limit(10),
+          where("isDraft", "==", false)
         );
       } else {
         q = query(
           collection(db, "posts"),
           orderBy("date", order),
-          limit(postsLimit)
+          where("isDraft", "==", false),
+          limit(10)
         );
       }
-
-      const paginatedQuery = await getPaginatedQuery(q, page);
-      const querySnapshot = await getDocs(paginatedQuery);
+  
+      const lastPost = posts[posts.length - 1];
+      if (lastPost) {
+        q = query(q, startAfter(lastPost.date)); // Usa o campo 'date' para paginação
+      }
+  
+      const querySnapshot = await getDocs(q);
       const fetchedPosts = await mapPosts(querySnapshot);
-
-      setPosts((prevPosts) => [
-        ...prevPosts,
-        ...fetchedPosts.filter(
-          (post) => !prevPosts.some((p) => p.id === post.id)
-        ),
-      ]);
+  
+      // Filtra para evitar duplicados
+      const uniquePosts = fetchedPosts.filter(
+        (post) => !posts.some((existing) => existing.id === post.id)
+      );
+  
+      if (uniquePosts.length === 0) setHasMore(false);
+      setPosts((prev) => [...prev, ...uniquePosts]);
     } catch (error) {
       toast.error("Erro ao buscar postagens");
       console.error(error);
@@ -116,66 +138,66 @@ export default function Home() {
       setLoading(false);
     }
   };
-
-  const fetchFollowingPosts = async (page = 1, search = "") => {
+  
+  const fetchFollowingPosts = async (search = "") => {
+    if (loading || !hasMore || following.length === 0) return;
     setLoading(true);
-    setTab("following");
     try {
-      if (following.length > 0) {
-        let q = query(
+      let q;
+      if (search) {
+        q = query(
+          collection(db, "posts"),
+          where("author", "in", following),
+          orderBy("titleLowerCase"),
+          startAt(search.toLowerCase()),
+          endAt(search.toLowerCase() + "\uf8ff"),
+          limit(10),
+          where("isDraft", "==", false)
+        );
+      } else {
+        q = query(
           collection(db, "posts"),
           where("author", "in", following),
           orderBy("date", order),
-          limit(postsLimit)
+          where("isDraft", "==", false),
+          limit(10)
         );
-
-        if (search) {
-          q = query(
-            collection(db, "posts"),
-            where("author", "in", following),
-            orderBy("titleLowerCase"),
-            startAt(search.toLowerCase()),
-            endAt(search.toLowerCase() + "\uf8ff"),
-            limit(postsLimit)
-          );
-        }
-
-        const paginatedQuery = await getPaginatedQuery(q, page);
-        const querySnapshot = await getDocs(paginatedQuery);
-        const fetchedPosts = await mapPosts(querySnapshot);
-
-        setPosts((prevPosts) => [
-          ...prevPosts,
-          ...fetchedPosts.filter(
-            (post) => !prevPosts.some((p) => p.id === post.id)
-          ),
-        ]);
-      } else {
-        setPosts([]);
       }
+  
+      const lastPost = posts[posts.length - 1];
+      if (lastPost) {
+        q = query(q, startAfter(lastPost.date)); // Usa o campo 'date' para paginação
+      }
+  
+      const querySnapshot = await getDocs(q);
+      const fetchedPosts = await mapPosts(querySnapshot);
+  
+      // Filtra para evitar duplicados
+      const uniquePosts = fetchedPosts.filter(
+        (post) => !posts.some((existing) => existing.id === post.id)
+      );
+  
+      if (uniquePosts.length === 0) setHasMore(false);
+      setPosts((prev) => [...prev, ...uniquePosts]);
     } catch (error) {
-      console.error(error);
       toast.error("Erro ao buscar postagens dos seguidos");
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
-
-  const getPaginatedQuery = async (q, page) => {
-    if (page > 1 && posts.length > 0) {
-      const lastPost = posts[posts.length - 1];
-      const lastPostDoc = await getDoc(doc(db, "posts", lastPost.id));
-      return query(q, startAfter(lastPostDoc)); // Retorna a Query diretamente
-    }
-    return q; // Retorna a Query para a primeira página
-  };
+  
 
   const mapPosts = async (querySnapshot) => {
     const tempPosts = [];
+    const authorCache = {};
+
     for (const post of querySnapshot.docs) {
       const postData = post.data();
-      const authorData = await fetchAuthorData(postData.author);
-      tempPosts.push({ ...postData, author: authorData });
+      if (!authorCache[postData.author]) {
+        authorCache[postData.author] = await fetchAuthorData(postData.author);
+      }
+      tempPosts.push({ ...postData, author: authorCache[postData.author] });
     }
     return tempPosts;
   };
@@ -195,43 +217,15 @@ export default function Home() {
       }
       return {};
     } catch (error) {
+      console.error(error);
+      toast.error("Erro ao receber dados do autor!");
       return {};
     }
   };
 
-  const handleSearch = async () => {
+  const handleSearch = () => {
     const newUrl = `/?tab=${currentTab}&q=${searchTerm}`;
     router.push(newUrl);
-    if (searchTerm) {
-      await fetchPosts(1, searchTerm);
-    } else {
-      await fetchPosts(1);
-    }
-  };
-
-  const handleSavePostChange = (postId, isSaved) => {
-    setSavedPosts((prevSavedPosts) => {
-      const updatedSavedPosts = new Set(prevSavedPosts);
-      if (isSaved) {
-        updatedSavedPosts.add(postId);
-      } else {
-        updatedSavedPosts.delete(postId);
-      }
-      return updatedSavedPosts;
-    });
-  };
-
-  // Função para atualizar posts curtidos
-  const handleLikePostChange = (postId, isLiked) => {
-    setLikedPosts((prevLikedPosts) => {
-      const updatedLikedPosts = new Set(prevLikedPosts);
-      if (isLiked) {
-        updatedLikedPosts.add(postId);
-      } else {
-        updatedLikedPosts.delete(postId);
-      }
-      return updatedLikedPosts;
-    });
   };
 
   return (
@@ -239,7 +233,7 @@ export default function Home() {
       {auth.currentUser && (
         <section className="tabs top">
           <button
-            className={`icon-label ${tab == "explore" && "active"}`}
+            className={`icon-label ${tab === "explore" && "active"}`}
             onClick={() => {
               setTab("explore");
               router.push("/?tab=explore");
@@ -248,62 +242,53 @@ export default function Home() {
             <Compass /> Explorar
           </button>
           <button
-            className={`icon-label ${tab == "following" && "active"}`}
+            className={`icon-label ${tab === "following" && "active"}`}
             onClick={() => {
               setTab("following");
               router.push("/?tab=following");
             }}
           >
-            <Users /> Seguindo
+            <Users /> Seguidos
           </button>
         </section>
       )}
-      <Suspense fallback={<div>Loading...</div>}>
-        <section className="search">
-          <div className="input_x">
-            <input
-              type="text"
-              placeholder="Pesquisar"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <button className="icon">
-              <X />
-            </button>
-          </div>
-          <button onClick={handleSearch} className="icon active">
-            <MagnifyingGlass />
+      <section className="search">
+        <div className="input_x">
+          <input
+            type="text"
+            placeholder="Pesquisar"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <button className="icon">
+            <X />
           </button>
-          <button
-            className="icon"
-            onClick={() => setOrder(order === "asc" ? "desc" : "asc")}
-          >
-            <ArrowDown style={{ rotate: order === "asc" ? 0 : 180 }} />
-          </button>
-        </section>
-      </Suspense>
-      <div className="posts-container">
-        {loading ? (
-          <p>Carregando...</p>
-        ) : posts.length ? (
-          posts
-            .filter((p) => p.isDraft == false)
-            .map((post) => (
-              <PostCard
-                key={post.id}
-                author={post.author}
-                post={post}
-                likedPosts={likedPosts}
-                savedPosts={savedPosts}
-                setLikedPosts={setLikedPosts}
-                setSavedPosts={setSavedPosts}
-                onSavePostChange={handleSavePostChange}
-                onLikePostChange={handleLikePostChange}
-              />
-            ))
-        ) : (
-          <p>Nenhuma postagem encontrada</p>
-        )}
+        </div>
+        <button onClick={handleSearch} className="icon active">
+          <MagnifyingGlass />
+        </button>
+        <button
+          className="icon"
+          onClick={() => setOrder(order === "asc" ? "desc" : "asc")}
+        >
+          <ArrowDown style={{ rotate: order === "asc" ? 0 : 180 }} />
+        </button>
+      </section>
+
+      <div className="posts-list">
+        {posts.map((post) => (
+          <PostCard
+            key={post.id}
+            author={post.author}
+            post={post}
+            likedPosts={likedPosts}
+            savedPosts={savedPosts}
+          />
+        ))}
+      </div>
+
+      <div ref={observerRef} className="loading-indicator">
+        {loading && <div>Carregando...</div>}
       </div>
     </>
   );

@@ -1,4 +1,5 @@
 "use client";
+
 import { auth, db } from "@/firebase";
 import {
   CheckSquare,
@@ -26,8 +27,8 @@ import {
   UploadSimple,
   WhatsappLogo,
 } from "@phosphor-icons/react";
-import { onAuthStateChanged, updateProfile } from "firebase/auth";
-import { Timestamp, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { updateProfile } from "firebase/auth";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import {
   getDownloadURL,
   getStorage,
@@ -40,46 +41,45 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
-const handleSave = async (
+// Função para salvar as informações do perfil
+const handleSaveProfile = async ({
   user,
   description,
   website,
   username,
   photoURL,
   social,
-  router
-) => {
-  if (user) {
-    try {
-      const userDocRef = doc(db, "users", user.uid);
-      await updateDoc(userDocRef, {
-        description: description.replaceAll("\n", "<br/>"),
-        website,
-        username,
-        photoURL,
-        social,
-      });
-      await updateProfile(auth.currentUser, {
-        displayName: username,
-        photoURL,
-      });
-      toast.success("Perfil atualizado com sucesso!");
-      router.push(`/u/${user.username}`);
-    } catch (error) {
-      toast.error("Erro ao atualizar perfil.");
-      console.error("Erro ao atualizar perfil:", error);
-    }
+  router,
+}) => {
+  if (!user) return;
+
+  try {
+    const userDocRef = doc(db, "users", user.uid);
+
+    await updateDoc(userDocRef, {
+      description: description.replaceAll("\n", "<br/>"),
+      website,
+      username,
+      photoURL,
+      social,
+    });
+
+    await updateProfile(auth.currentUser, {
+      displayName: username,
+      photoURL,
+    });
+
+    toast.success("Perfil atualizado com sucesso!");
+    router.push(`/u/${username}`);
+  } catch (error) {
+    console.error("Erro ao atualizar perfil:", error);
+    toast.error("Erro ao atualizar perfil.");
   }
 };
 
-const handleFileUpload = async (e, user, setPhotoURL) => {
-  if (!user || !user.uid) {
-    toast.error("Usuário não autenticado. Faça login novamente.");
-    return;
-  }
-
-  const file = e.target.files[0];
-  if (!file) return;
+// Função para upload da imagem de perfil
+const handleUploadPhoto = async (file, user, setPhotoURL) => {
+  if (!file || !user) return;
 
   const storage = getStorage();
   const storageRef = ref(storage, `user_photos/${user.uid}`);
@@ -88,10 +88,10 @@ const handleFileUpload = async (e, user, setPhotoURL) => {
 
   uploadTask.on(
     "state_changed",
-    () => {},
+    null,
     (error) => {
+      console.error("Erro no upload da imagem:", error);
       toast.error("Erro ao fazer upload da imagem.");
-      console.error("Erro ao fazer upload da imagem:", error);
     },
     async () => {
       const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
@@ -102,7 +102,10 @@ const handleFileUpload = async (e, user, setPhotoURL) => {
 };
 
 export default function ProfileEdit() {
-  const [user, setUser] = useState(localStorage.getItem("user"));
+  const router = useRouter();
+  const headingRef = useRef(null);
+
+  const [user, setUser] = useState(null);
   const [description, setDescription] = useState("");
   const [website, setWebsite] = useState("");
   const [username, setUsername] = useState("");
@@ -113,11 +116,8 @@ export default function ProfileEdit() {
     facebook: "",
     twitter: "",
     threads: "",
-    whatsapp: "",
   });
   const [tabIsPreview, setTabIsPreview] = useState(false);
-  const headingRef = useRef(null);
-  const router = useRouter();
 
   useEffect(() => {
     document.title = "Editar meu perfil - text.dev.br";
@@ -127,33 +127,33 @@ export default function ProfileEdit() {
         headingRef.current.removeAttribute("open");
       }
     };
+
     document.addEventListener("click", handleClickOutside);
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
+    return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      const fetchUserData = async () => {
-        const userDoc = await getDoc(doc(db, "users", parsedUser.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          setUser(userData);
-          setDescription(userData.description || "");
-          setWebsite(userData.website || "");
-          setUsername(userData.username || "");
-          setPhotoURL(userData.photoURL || "");
-          setSocial(userData.social || {});
-        }
-      };
-      fetchUserData();
-    } else {
-      toast.error("Usuário não encontrado. Faça login novamente.");
-      router.push("/auth/login");
-    }
+    const fetchUserData = async () => {
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      if (!storedUser) {
+        toast.error("Usuário não encontrado. Faça login novamente.");
+        router.push("/auth/login");
+        return;
+      }
+
+      const userDoc = await getDoc(doc(db, "users", storedUser.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        setUser(userData);
+        setDescription(userData.description || "");
+        setWebsite(userData.website || "");
+        setUsername(userData.username || "");
+        setPhotoURL(userData.photoURL || "");
+        setSocial(userData.social || {});
+      }
+    };
+
+    fetchUserData();
   }, [router]);
 
   return (
@@ -181,7 +181,9 @@ export default function ProfileEdit() {
               accept="image/*"
               id="photo"
               type="file"
-              onChange={(e)=>handleFileUpload(e, user, setPhotoURL)}
+              onChange={(e) =>
+                handleUploadPhoto(e.target.files[0], user, setPhotoURL)
+              }
             />
           </div>
         </div>
@@ -368,141 +370,55 @@ export default function ProfileEdit() {
 
         <div>
           <h3>Redes sociais</h3>
-          <div className="input">
-            <a
-              href={"https://github.com/" + social.github}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn icon"
-              disabled={!social.github}
-            >
-              <GithubLogo />
-            </a>
-            <input
-              type="text"
-              id="github"
-              value={social.github}
-              onChange={(e) =>
-                setSocial({
-                  ...social,
-                  github: e.target.value,
-                })
-              }
-              placeholder="GitHub"
-            />
-          </div>
-          <div className="input">
-            <a
-              href={"https://instagram.com/" + social.instagram}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn icon"
-              disabled={!social.instagram}
-            >
-              <InstagramLogo />
-            </a>
-            <input
-              type="text"
-              id="instagram"
-              value={social.instagram}
-              onChange={(e) =>
-                setSocial({
-                  ...social,
-                  instagram: e.target.value,
-                })
-              }
-              placeholder="Instagram"
-            />
-          </div>
-          <div className="input">
-            <a
-              href={"https://facebook.com/" + social.facebook}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn icon"
-              disabled={social.facebook ? false : true}
-            >
-              <FacebookLogo />
-            </a>
-            <input
-              type="text"
-              id="facebook"
-              value={social.facebook}
-              onChange={(e) =>
-                setSocial({
-                  ...social,
-                  facebook: e.target.value,
-                })
-              }
-              placeholder="Facebook"
-            />
-          </div>
-          <div className="input">
-            <a
-              href={"https://x.com/" + social.twitter}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn icon"
-            >
-              <TwitterLogo />
-            </a>
-            <input
-              type="text"
-              id="twitter"
-              value={social.twitter}
-              onChange={(e) =>
-                setSocial({
-                  ...social,
-                  twitter: e.target.value,
-                })
-              }
-              placeholder="Twitter"
-            />
-          </div>
-          <div className="input">
-            <a
-              href={"https://threads.net/@" + social.threads}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn icon"
-            >
-              <ThreadsLogo />
-            </a>
-            <input
-              type="text"
-              id="threads"
-              value={social.threads}
-              onChange={(e) =>
-                setSocial({
-                  ...social,
-                  threads: e.target.value,
-                })
-              }
-              placeholder="Threads"
-            />
-          </div>
-          <div className="input">
-            <a
-              href={"https://wa.me/" + social.whatsapp}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn icon"
-            >
-              <WhatsappLogo />
-            </a>
-            <input
-              type="text"
-              id="whatsapp"
-              value={social.whatsapp}
-              onChange={(e) =>
-                setSocial({
-                  ...social,
-                  whatsapp: e.target.value,
-                })
-              }
-              placeholder="WhatsApp"
-            />
-          </div>
+          {[
+            {
+              name: "GitHub",
+              icon: <GithubLogo />,
+              url: "https://github.com/",
+            },
+            {
+              name: "Instagram",
+              icon: <InstagramLogo />,
+              url: "https://instagram.com/",
+            },
+            {
+              name: "Facebook",
+              icon: <FacebookLogo />,
+              url: "https://facebook.com/",
+            },
+            {
+              name: "Twitter",
+              icon: <TwitterLogo />,
+              url: "https://x.com/",
+            },
+            {
+              name: "Threads",
+              icon: <ThreadsLogo />,
+              url: "https://threads.net/",
+            }
+          ].map((s) => (
+            <div key={s.name} className="input">
+              <a
+                href={s.url + social[s.name.toLowerCase()]}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn icon"
+                disabled={!social[s.name.toLowerCase()]}
+              >
+                {s.icon}
+              </a>
+              <input
+                type="text"
+                id={s.name.toLowerCase()}
+                value={social[s.name.toLowerCase()]}
+                onChange={(e) => {
+                  social[s.name.toLowerCase()] = e.target.value;
+                  setSocial(social);
+                }}
+                placeholder={s.name}
+              />
+            </div>
+          ))}
         </div>
 
         <div className="buttons">
@@ -511,15 +427,15 @@ export default function ProfileEdit() {
           </a>
           <button
             onClick={() =>
-              handleSave(
+              handleSaveProfile({
                 user,
                 description,
                 website,
                 username,
                 photoURL,
                 social,
-                router
-              )
+                router,
+              })
             }
             className="active"
           >

@@ -1,5 +1,3 @@
-"use client";
-
 import { auth, db } from "@/firebase";
 import {
   collection,
@@ -8,15 +6,23 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-
 import Link from "next/link";
 
-export default function DeletePosts() {
+export async function getServerSideProps(context) {
+  const { redirect } = context.query;
+
+  return {
+    props: {
+      redirect: redirect || "/",
+    },
+  };
+}
+
+export default function DeletePosts({ redirect }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
 
@@ -60,7 +66,7 @@ export default function DeletePosts() {
         toast.error("Nenhuma postagem encontrada para deletar.");
       }
 
-      router.push(searchParams.get("redirect") || "/");
+      router.push(redirect);
     } catch (error) {
       console.error("Erro ao deletar postagens:", error);
       toast.error("Erro ao deletar postagens!");
@@ -70,25 +76,20 @@ export default function DeletePosts() {
   };
 
   return (
-    <Suspense fallback={<p>Carregando...</p>}>
-      <section className="form">
-        <h1>Deletar postagens</h1>
-        <div className="buttons">
-          <Link
-            href={searchParams.get("redirect") || "/"}
-            className="btn active"
-          >
-            Cancelar
-          </Link>
-          <button
-            onClick={handleDeletePosts}
-            className="danger"
-            disabled={loading}
-          >
-            {loading ? "Processando..." : "Deletar postagens"}
-          </button>
-        </div>
-      </section>
-    </Suspense>
+    <section className="form">
+      <h1>Deletar postagens</h1>
+      <div className="buttons">
+        <Link href={redirect} className="btn active">
+          Cancelar
+        </Link>
+        <button
+          onClick={handleDeletePosts}
+          className="danger"
+          disabled={loading}
+        >
+          {loading ? "Processando..." : "Deletar postagens"}
+        </button>
+      </div>
+    </section>
   );
 }

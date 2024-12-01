@@ -1,6 +1,7 @@
 "use client";
+
 import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   getAuth,
   confirmPasswordReset,
@@ -12,14 +13,12 @@ import toast from "react-hot-toast";
 import { Eye, EyeClosed } from "@phosphor-icons/react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/firebase";
-
 import Link from "next/link";
 
-export default function AuthAction() {
+export default function AuthAction({ searchParams }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const mode = searchParams.get("mode");
-  const oobCode = searchParams.get("oobCode");
+  const mode = searchParams?.mode;
+  const oobCode = searchParams?.oobCode;
   const auth = getAuth();
 
   const [newPassword, setNewPassword] = useState("");
@@ -81,7 +80,6 @@ export default function AuthAction() {
     try {
       await applyActionCode(auth, oobCode);
 
-      // Verifique se o usuário está logado antes de atualizar o Firestore
       if (auth.currentUser) {
         await updateDoc(doc(db, "users", auth.currentUser.uid), {
           emailVerified: true,
@@ -99,7 +97,6 @@ export default function AuthAction() {
 
   const handleDeleteAccount = async () => {
     try {
-      // Lógica para deletar a conta do usuário
       toast.success("Conta deletada com sucesso!");
       router.push("/");
     } catch (error) {

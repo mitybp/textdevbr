@@ -39,7 +39,7 @@ export default function Layout({ children }) {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
         let userDoc = await getDoc(doc(db, "users", u.uid));
-        if(userDoc.exists()){
+        if (userDoc.exists()) {
           let userData = userDoc.data();
           setUser(userData);
           localStorage.setItem("user", JSON.stringify(userData));
@@ -81,11 +81,19 @@ export default function Layout({ children }) {
         <div className="links">
           {user ? (
             <>
-              <Link href="/new" className="btn icon active" title="Nova postagem">
+              <Link
+                href="/new"
+                className="btn icon active"
+                title="Nova postagem"
+              >
                 <PlusCircle />
               </Link>
               <hr className="y" />
-              <Link href="/activity" className="btn icon" title="Minha atividade">
+              <Link
+                href="/activity"
+                className="btn icon"
+                title="Minha atividade"
+              >
                 <Pulse />
               </Link>
               {/* <Link href="/notifications" className="btn icon" title="Notificações">
@@ -112,11 +120,11 @@ export default function Layout({ children }) {
                   <Link href="/settings/profile" className="btn icon-label">
                     Editar perfil <PencilSimple />
                   </Link>
-                  
+
                   <Link href="/settings/account" className="btn icon-label">
                     Configurações <Gear />
                   </Link>
-                  
+
                   <button
                     className="icon-label"
                     onClick={toggleTheme}
@@ -161,13 +169,20 @@ export default function Layout({ children }) {
       <footer>
         <div>
           <span className="brand">.dev</span>
-          <p>text.dev.br</p>
+          <p>text.dev.br &copy; 2024</p>
+        </div>
+        <div>
+          <Link href="/policies">Políticas</Link>
+          <Link href="/code-of-conduct">Código de conduta</Link>
+        </div>
+        <div>
+          <Link href="/faq">FAQ</Link>
+          <Link href="/contact">Contato</Link>
         </div>
         <div>
           <p>
             Feito com ❤️ por <Link href="/u/dimitri.pusch">dimitri.pusch</Link>
           </p>
-          <p>text.dev.br &copy; 2024</p>
         </div>
       </footer>
     </body>

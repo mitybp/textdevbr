@@ -1,18 +1,18 @@
 "use client";
+
 import PostCard from "@/(components)/PostCard";
 import { auth, db } from "@/firebase";
 import { BookmarksSimple, Heart, HouseSimple } from "@phosphor-icons/react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-const Activity = () => {
+export default function Activity({ searchParams }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") || "liked";
+  const initialTab = searchParams?.tab || "liked";
   const [tab, setTab] = useState(initialTab);
 
   const [likedPosts, setLikedPosts] = useState(new Set());
@@ -33,7 +33,7 @@ const Activity = () => {
       }
     });
     return () => unsubscribe();
-  }, [router, fetchUserActivity]);
+  }, [router]);
 
   const fetchUserActivity = async (uid) => {
     try {
@@ -73,13 +73,11 @@ const Activity = () => {
       const postData = postDoc.data();
 
       if (!postData.author) {
-        // Retorna post com autor desconhecido
         return { ...postData, author: { username: "Anônimo", uid: null } };
       }
 
       const authorDoc = await getDoc(doc(db, "users", postData.author));
       if (!authorDoc.exists()) {
-        // Retorna post com autor desconhecido se não conseguir buscar o autor
         return { ...postData, author: { username: "Anônimo", uid: null } };
       }
 
@@ -99,10 +97,9 @@ const Activity = () => {
 
   const handleTabChange = (newTab) => {
     setTab(newTab);
-    router.push(`/activity/?tab=${newTab}`);
+    router.replace(`/activity/?tab=${newTab}`);
   };
 
-  // Funções que receberão mudanças dos PostCards
   const handleLikePostChange = (postId, isLiked) => {
     setLikedPostIdsSet((prev) => {
       const newSet = new Set(prev);
@@ -119,7 +116,6 @@ const Activity = () => {
     });
   };
 
-  // Passe essas funções para os PostCards ao renderizar
   const renderPosts = (postsSet) => {
     const postsArray = Array.from(postsSet);
     return postsArray.length === 0 ? (
@@ -181,6 +177,4 @@ const Activity = () => {
       </section>
     </Suspense>
   );
-};
-
-export default Activity;
+}
