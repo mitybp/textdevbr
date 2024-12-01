@@ -1,3 +1,4 @@
+"use client"
 import { auth, db, googleProvider } from "@/firebase";
 import { Eye, EyeClosed, GoogleLogo } from "@phosphor-icons/react";
 import {
