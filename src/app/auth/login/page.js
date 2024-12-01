@@ -1,4 +1,5 @@
-"use client"
+"use client";
+
 import { auth, db, googleProvider } from "@/firebase";
 import { Eye, EyeClosed, GoogleLogo } from "@phosphor-icons/react";
 import {
@@ -8,21 +9,13 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import Link from "next/link";
 
-export async function getServerSideProps(context) {
-  const { redirect } = context.query;
-
-  return {
-    props: {
-      redirect: redirect || "/",
-    },
-  };
-}
-
-export default function Login({ redirect }) {
+export default function Login() {
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect") || "/";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);

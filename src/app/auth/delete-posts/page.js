@@ -1,28 +1,15 @@
-"use client"
-import { auth, db } from "@/firebase";
-import {
-  collection,
-  deleteDoc,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
+"use client";
+
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { auth, db } from "@/firebase";
+import { collection, deleteDoc, getDocs, query, where } from "firebase/firestore";
 import toast from "react-hot-toast";
 import Link from "next/link";
 
-export async function getServerSideProps(context) {
-  const { redirect } = context.query;
-
-  return {
-    props: {
-      redirect: redirect || "/",
-    },
-  };
-}
-
-export default function DeletePosts({ redirect }) {
+export default function DeletePosts() {
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect") || "/";
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
@@ -49,7 +36,6 @@ export default function DeletePosts({ redirect }) {
     setLoading(true);
 
     try {
-      // Consultar todas as postagens do usuário logado
       const postsQuery = query(
         collection(db, "posts"),
         where("author", "==", user.uid)
@@ -58,7 +44,6 @@ export default function DeletePosts({ redirect }) {
       const postsLength = postsSnapshot.docs.length;
 
       if (postsLength > 0) {
-        // Deletar todas as postagens encontradas
         await Promise.all(
           postsSnapshot.docs.map((post) => deleteDoc(post.ref))
         );
