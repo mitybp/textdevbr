@@ -221,89 +221,91 @@ export default function UserPage({ params }) {
     <>
       <section className="user_info">
         <div className="user_header">
-          <div className="user_header_image">
-            <Image
-              width={100}
-              height={100}
-              src={user.photoURL}
-              alt="Foto do usuário"
-              priority
-            />
-          </div>
-          <div className="user_header_info">
-            <small className="username">{user.username}</small>
-            <small>
-              <span>{posts.length} postagens</span>
-              {userFollowers == 0 ? (
-                <span>0 seguidores</span>
-              ) : (
-                <Link href={`/u/${user.username}/followers`}>
-                  {userFollowers} seguidores
-                </Link>
-              )}
-              {userFollowing == 0 ? (
-                <span>0 seguindo</span>
-              ) : (
-                <Link href={`/u/${user.username}/following`}>
-                  {userFollowing} seguindo
-                </Link>
-              )}
-            </small>
-            <div className="user_header_info_social">
-              {[
-                {
-                  name: "github",
-                  url: "https://github.com/",
-                  icon: <GithubLogo />,
-                },
-                {
-                  name: "likedin",
-                  url: "https://linkedin.com/",
-                  icon: <LinkedinLogo />,
-                },
-                {
-                  name: "instagram",
-                  url: "https://instagram.com/",
-                  icon: <InstagramLogo />,
-                },
-                {
-                  name: "facebook",
-                  url: "https://facebook.com/",
-                  icon: <FacebookLogo />,
-                },
-                {
-                  name: "twitter",
-                  url: "https://x.com/",
-                  icon: <TwitterLogo />,
-                },
-                {
-                  name: "whatsapp",
-                  url: "https://wa.me/",
-                  icon: <WhatsappLogo />,
-                },
-              ].map(
-                (social) =>
-                  user.social[social.name] && (
-                    <Link
-                      key={social.name}
-                      href={social.url + user.social[social.name]}
-                      className={`btn icon${social.name == "github" ? "-label" : ""} pill`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {social.name == "github" ? (
-                        <>
-                          {social.icon}
-                          {user.social[social.name]}
-                        </>
-                      ) : (
-                        social.icon
-                      )}
-                    </Link>
-                  )
-              )}
+          <>
+            <div className="user_header_image">
+              <Image
+                width={100}
+                height={100}
+                src={user.photoURL}
+                alt="Foto do usuário"
+                priority
+              />
             </div>
-          </div>
+            <div className="user_header_info">
+              <small className="username">{user.username}</small>
+              <small>
+                <span>{posts.length} postagens</span>
+                {userFollowers == 0 ? (
+                  <span>0 seguidores</span>
+                ) : (
+                  <Link href={`/u/${user.username}/followers`}>
+                    {userFollowers} seguidores
+                  </Link>
+                )}
+                {userFollowing == 0 ? (
+                  <span>0 seguindo</span>
+                ) : (
+                  <Link href={`/u/${user.username}/following`}>
+                    {userFollowing} seguindo
+                  </Link>
+                )}
+              </small>
+              <div className="user_header_info_social">
+                {[
+                  {
+                    name: "github",
+                    url: "https://github.com/",
+                    icon: <GithubLogo />,
+                  },
+                  {
+                    name: "likedin",
+                    url: "https://linkedin.com/",
+                    icon: <LinkedinLogo />,
+                  },
+                  {
+                    name: "instagram",
+                    url: "https://instagram.com/",
+                    icon: <InstagramLogo />,
+                  },
+                  {
+                    name: "facebook",
+                    url: "https://facebook.com/",
+                    icon: <FacebookLogo />,
+                  },
+                  {
+                    name: "twitter",
+                    url: "https://x.com/",
+                    icon: <TwitterLogo />,
+                  },
+                  {
+                    name: "whatsapp",
+                    url: "https://wa.me/",
+                    icon: <WhatsappLogo />,
+                  },
+                ].map(
+                  (social) =>
+                    user.social[social.name] && (
+                      <Link
+                        key={social.name}
+                        href={social.url + user.social[social.name]}
+                        className={`btn icon${social.name == "github" ? "-label" : ""} pill`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {social.name == "github" ? (
+                          <>
+                            {social.icon}
+                            {user.social[social.name]}
+                          </>
+                        ) : (
+                          social.icon
+                        )}
+                      </Link>
+                    )
+                )}
+              </div>
+            </div>
+          </>
           <div className="user_header_sidebar">
             <details className="md z" ref={menuRef}>
               <summary>
