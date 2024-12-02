@@ -458,8 +458,8 @@ section.user_info {
     .user_header_info {
       width: 100%;
       display: flex !important;
+      flex-direction: column !important;
       gap: 6px;
-      flex-direction: column;
       small {
         display: flex !important;
         flex-direction: row;
