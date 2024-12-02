@@ -1,50 +1,69 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { auth, db } from "@/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { UserMinus } from "@phosphor-icons/react";
+import { db } from "@/firebase";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
-const Followers = () => {
+const Followers = ({ params }) => {
   const [followers, setFollowers] = useState([]);
-  const [currentUserUid, setCurrentUserUid] = useState(JSON.parse(localStorage.getItem("user")).uid||null);
+  const [profileUid, setProfileUid] = useState(null);
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchFollowers = async () => {
+    const fetchProfileUid = async () => {
       try {
-        const user = auth.currentUser;
-        if (!user) {
-          toast.error("Usuário não autenticado.");
+        // Obtém o UID do usuário com base no username nos parâmetros
+        const userQueryRef = query(collection(db, "users"), where("username", "==", params.username));
+        const userQuerySnap = await getDocs(userQueryRef);
+
+        if (userQuerySnap.empty) {
+          toast.error("Usuário não encontrado.");
+          router.push("/404");
           return;
         }
 
-        setCurrentUserUid(user.uid);
+        setProfileUid(userQuerySnap.docs[0].data().uid);
+      } catch (error) {
+        toast.error("Erro ao carregar o perfil.");
+        console.error("Erro ao buscar UID do usuário:", error);
+      }
+    };
 
-        // Obtém o documento do usuário logado na coleção "users"
-        const userDocRef = doc(db, "users", user.uid);
+    fetchProfileUid();
+  }, [params.username, router]);
+
+  useEffect(() => {
+    if (!profileUid) return;
+
+    const fetchFollowers = async () => {
+      try {
+        // Busca a lista de "followers" do perfil identificado pelo UID
+        const userDocRef = doc(db, "users", profileUid);
         const userDoc = await getDoc(userDocRef);
 
         if (!userDoc.exists()) {
-          toast.error("Dados do usuário não encontrados.");
+          toast.error("Dados do perfil não encontrados.");
           return;
         }
 
-        const { followers } = userDoc.data();
+        const { followers: followersList } = userDoc.data();
 
-        if (!followers || followers.length === 0) {
+        if (!followersList || followersList.length === 0) {
           setFollowers([]);
-          toast("Nenhum seguidor encontrado.", { icon: "👀" });
+          toast.error("Este usuário não possui seguidores.")
           return;
         }
 
         // Busca os dados dos seguidores
-        const followerPromises = followers.map((uid) =>
+        const followersPromises = followersList.map((uid) =>
           getDoc(doc(db, "users", uid))
         );
-        const followerDocs = await Promise.all(followerPromises);
+        const followersDocs = await Promise.all(followersPromises);
 
-        const users = followerDocs
+        const users = followersDocs
           .filter((docSnap) => docSnap.exists())
           .map((docSnap) => ({
             uid: docSnap.id,
@@ -53,47 +72,13 @@ const Followers = () => {
 
         setFollowers(users);
       } catch (error) {
-        toast.error("Erro ao carregar seguidores.");
+        toast.error("Erro ao carregar os seguidores.");
         console.error("Erro ao buscar seguidores:", error);
       }
     };
 
     fetchFollowers();
-  }, []);
-
-  const handleRemoveFollower = async (followerUid) => {
-    try {
-      // Atualiza o banco de dados do usuário logado
-      const userDocRef = doc(db, "users", currentUserUid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        const { followers = [] } = userDoc.data();
-        const updatedFollowers = followers.filter((uid) => uid !== followerUid);
-        await updateDoc(userDocRef, { followers: updatedFollowers });
-
-        // Atualiza o banco de dados do seguidor
-        const followerDocRef = doc(db, "users", followerUid);
-        const followerDoc = await getDoc(followerDocRef);
-
-        if (followerDoc.exists()) {
-          const { following = [] } = followerDoc.data();
-          const updatedFollowing = following.filter((uid) => uid !== currentUserUid);
-          await updateDoc(followerDocRef, { following: updatedFollowing });
-        }
-
-        // Atualiza o estado local
-        setFollowers((prev) =>
-          prev.filter((user) => user.uid !== followerUid)
-        );
-
-        toast.success("Seguidor removido com sucesso.");
-      }
-    } catch (error) {
-      toast.error("Erro ao remover seguidor.");
-      console.error("Erro ao remover seguidor:", error);
-    }
-  };
+  }, [profileUid]);
 
   return (
     <>
@@ -106,23 +91,14 @@ const Followers = () => {
                 <img src={user.photoURL} alt={`${user.username}'s avatar`} />
                 <span>{user.username}</span>
               </Link>
-              <button
-                className="icon-label"
-                onClick={() => handleRemoveFollower(user.uid)}
-              >
-                <UserMinus />
-                Remover
-              </button>
             </div>
           ))
         ) : (
-          <p>Você ainda não possui seguidores.</p>
+          <p>Este usuário ainda não possui seguidores.</p>
         )}
       </section>
     </>
   );
 };
-
-import Link from "next/link";
 
 export default Followers;

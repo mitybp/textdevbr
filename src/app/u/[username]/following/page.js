@@ -1,34 +1,51 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { auth, db } from "@/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { UserMinus } from "@phosphor-icons/react";
+import { db } from "@/firebase";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
-const Following = () => {
+const Following = ({ params }) => {
   const [following, setFollowing] = useState([]);
-  const [currentUserUid, setCurrentUserUid] = useState(JSON.parse(localStorage.getItem("user")).uid||null);
+  const [profileUid, setProfileUid] = useState(null);
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchFollowing = async () => {
+    const fetchProfileUid = async () => {
       try {
-        // Tenta obter o usuário do auth ou do localStorage
-        const user = auth.currentUser || JSON.parse(localStorage.getItem("user"));
+        // Obtém o UID do usuário com base no username nos parâmetros
+        const userQueryRef = query(collection(db, "users"), where("username", "==", params.username));
+        const userQuerySnap = await getDocs(userQueryRef);
 
-        if (!user) {
-          toast.error("Usuário não autenticado.");
+        if (userQuerySnap.empty) {
+          toast.error("Usuário não encontrado.");
+          router.push("/404");
           return;
         }
 
-        setCurrentUserUid(user.uid);
+        setProfileUid(userQuerySnap.docs[0].data().uid);
+      } catch (error) {
+        toast.error("Erro ao carregar o perfil.");
+        console.error("Erro ao buscar UID do usuário:", error);
+      }
+    };
 
-        // Obtém o documento do usuário logado na coleção "users"
-        const userDocRef = doc(db, "users", user.uid);
+    fetchProfileUid();
+  }, [params.username, router]);
+
+  useEffect(() => {
+    if (!profileUid) return;
+
+    const fetchFollowing = async () => {
+      try {
+        // Busca a lista de "following" do perfil identificado pelo UID
+        const userDocRef = doc(db, "users", profileUid);
         const userDoc = await getDoc(userDocRef);
 
         if (!userDoc.exists()) {
-          toast.error("Dados do usuário não encontrados.");
+          toast.error("Dados do perfil não encontrados.");
           return;
         }
 
@@ -36,7 +53,7 @@ const Following = () => {
 
         if (!followingList || followingList.length === 0) {
           setFollowing([]);
-          toast("Você ainda não segue ninguém.", { icon: "👀" });
+          toast("Este usuário ainda não segue ninguém.", { icon: "👀" });
           return;
         }
 
@@ -61,41 +78,7 @@ const Following = () => {
     };
 
     fetchFollowing();
-  }, []);
-
-  const handleUnfollow = async (followingUid) => {
-    try {
-      // Atualiza o banco de dados do usuário logado
-      const userDocRef = doc(db, "users", currentUserUid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        const { following = [] } = userDoc.data();
-        const updatedFollowing = following.filter((uid) => uid !== followingUid);
-        await updateDoc(userDocRef, { following: updatedFollowing });
-
-        // Atualiza o banco de dados do usuário "desseguido"
-        const followingUserDocRef = doc(db, "users", followingUid);
-        const followingUserDoc = await getDoc(followingUserDocRef);
-
-        if (followingUserDoc.exists()) {
-          const { followers = [] } = followingUserDoc.data();
-          const updatedFollowers = followers.filter((uid) => uid !== currentUserUid);
-          await updateDoc(followingUserDocRef, { followers: updatedFollowers });
-        }
-
-        // Atualiza o estado local
-        setFollowing((prev) =>
-          prev.filter((user) => user.uid !== followingUid)
-        );
-
-        toast.success("Você deixou de seguir este usuário.");
-      }
-    } catch (error) {
-      toast.error("Erro ao deixar de seguir o usuário.");
-      console.error("Erro ao deixar de seguir o usuário:", error);
-    }
-  };
+  }, [profileUid]);
 
   return (
     <>
@@ -108,23 +91,14 @@ const Following = () => {
                 <img src={user.photoURL} alt={`${user.username}'s avatar`} />
                 <span>{user.username}</span>
               </Link>
-              <button
-                className="icon-label"
-                onClick={() => handleUnfollow(user.uid)}
-              >
-                <UserMinus />
-                Deixar de Seguir
-              </button>
             </div>
           ))
         ) : (
-          <p>Você ainda não segue ninguém.</p>
+          <p>Este usuário ainda não segue ninguém.</p>
         )}
       </section>
     </>
   );
 };
-
-import Link from "next/link";
 
 export default Following;

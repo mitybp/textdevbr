@@ -588,7 +588,7 @@ section.form {
     display: flex;
   }
 
-  label.radio {
+  label.checkbox {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -598,7 +598,7 @@ section.form {
       width: 25px !important;
       height: 25px !important;
       border: 1px solid var(--gray);
-      border-radius: 15px;
+      border-radius: 4px;
       &.checked {
         background-color: var(--primary);
         border-color: var(--secondary);

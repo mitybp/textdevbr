@@ -8,8 +8,6 @@ import {
   getDoc,
   getDocs,
   query,
-  setDoc,
-  Timestamp,
   where,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -17,52 +15,42 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 const ReportUser = ({ params }) => {
-  const [reason, setReason] = useState("");
+  const [reasons, setReasons] = useState([]);
   const [user, setUser] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
+    document.title = "Denunciar usuário - text.dev.br";
+
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
-        const docRef = doc(db, "users", u.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setUser(docSnap.data());
-        } else {
-          const userData = {
-            description: "",
-            email: u.email,
-            emailVerified: u.emailVerified,
-            joinedAt: Timestamp.now(),
-            name: u.displayName,
-            username: formatUsername(u.displayName),
-            photoURL: u.photoURL,
-            uid: u.uid,
-            website: "",
-            github: "",
-            savedPosts: [],
-          };
-          await setDoc(docRef, userData);
-          setUser(userData);
+        const userDocRef = doc(db, "users", u.uid);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists()) {
+          const tempUser = userDocSnap.data();
+          setUser({ ...tempUser, uid: u.uid });
         }
       } else {
-        toast.error("Você precisa fazer login para denunciar o usuário!");
-        router.push("/");
+        router.push(`/auth/login/?redirect=/u/${params.username}/report`);
+        toast.error("Faça login para denunciar o usuário.");
       }
     });
 
     return () => unsubscribe();
   }, [router]);
 
-  const handleSubmit = async () => {
-    if (!user) {
-      toast.error("Você precisa fazer login para denunciar o usuário!");
-      router.push(`/auth/login/?redirect=/${params.username}/report`);
-      return;
-    }
+  const handleReasonToggle = (reason) => {
+    setReasons((prev) =>
+      prev.includes(reason)
+        ? prev.filter((r) => r !== reason)
+        : [...prev, reason]
+    );
+  };
 
-    if (!reason) {
-      toast.error("Selecione uma razão para a denúncia!");
+  const handleSubmit = async () => {
+    if (reasons.length === 0) {
+      toast.error("Selecione pelo menos uma razão para a denúncia!");
       return;
     }
 
@@ -81,15 +69,13 @@ const ReportUser = ({ params }) => {
       const reportedUser = reportedUserSnap.docs[0].data();
 
       const reportDocData = {
-        reason,
+        reasons,
         reporter: {
           username: user.username,
-          name: user.name,
           uid: user.uid,
         },
         reported: {
           username: reportedUser.username,
-          name: reportedUser.name,
           uid: reportedUser.uid,
         },
         date: new Date(),
@@ -97,19 +83,11 @@ const ReportUser = ({ params }) => {
 
       await addDoc(collection(db, "reports"), reportDocData);
       toast.success("Denúncia enviada com sucesso!");
-      router.push(`/${params.username}`);
+      router.push(`/u/${params.username}`);
     } catch (error) {
       console.error(error);
       toast.error("Ocorreu um erro ao enviar a denúncia. Tente novamente.");
     }
-  };
-  const formatUsername = (name) => {
-    return name
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/\s+/g, "-")
-      .toLowerCase()
-      .replace(/[!?°,°#]/g, "");
   };
 
   return (
@@ -121,93 +99,38 @@ const ReportUser = ({ params }) => {
       </p>
       <section className="form">
         <div className="input">
-          <label className="radio" onClick={() => setReason("Abusive content")}>
-            <span className={reason === "Abusive content" ? "checked" : ""} />
-            Conteúdo abusivo
-          </label>
-          <label
-            className="radio"
-            onClick={() => setReason("Violation of Community Guidelines")}
-          >
-            <span
-              className={
-                reason === "Violation of Community Guidelines" ? "checked" : ""
-              }
-            />
-            Conteúdo que viola as diretrizes da comunidade
-          </label>
-          <label
-            className="radio"
-            onClick={() => setReason("Violation of privacy")}
-          >
-            <span
-              className={reason === "Violation of privacy" ? "checked" : ""}
-            />
-            Conteúdo que viola a privacidade
-          </label>
-          <label
-            className="radio"
-            onClick={() => setReason("Fraud or attempted scam")}
-          >
-            <span
-              className={reason === "Fraud or attempted scam" ? "checked" : ""}
-            />
-            Fraude ou tentativa de golpe
-          </label>
-          <label
-            className="radio"
-            onClick={() =>
-              setReason("Hate speech, discrimination or prejudice")
-            }
-          >
-            <span
-              className={
-                reason === "Hate speech, discrimination or prejudice"
-                  ? "checked"
-                  : ""
-              }
-            />
-            Discurso de ódio, discriminação ou preconceito
-          </label>
-          <label
-            className="radio"
-            onClick={() => setReason("Inappropriate profile information")}
-          >
-            <span
-              className={
-                reason === "Inappropriate profile information" ? "checked" : ""
-              }
-            />
-            Informação(ões) de perfil inapropriada(as)
-          </label>
-          <label
-            className="radio"
-            onClick={() => setReason("User is under 14 years old")}
-          >
-            <span
-              className={
-                reason === "User is under 14 years old" ? "checked" : ""
-              }
-            />
-            O usuário possui menos de 14 anos
-          </label>
-          <label
-            className="radio"
-            onClick={() => setReason("Content not relevant to the community")}
-          >
-            <span
-              className={
-                reason === "Content not relevant to the community"
-                  ? "checked"
-                  : ""
-              }
-            />
-            Conteúdo sem relevância para a comunidade
-          </label>
+          {[
+            "Abusive content",
+            "Violation of Community Guidelines",
+            "Violation of privacy",
+            "Fraud or attempted scam",
+            "Hate speech, discrimination or prejudice",
+            "Inappropriate profile information",
+            "User is under 14 years old",
+            "Content not relevant to the community",
+          ].map((reason) => (
+            <label
+              key={reason}
+              className="checkbox"
+              onClick={() => handleReasonToggle(reason)}
+            >
+              <span className={reasons.includes(reason) ? "checked" : ""} />
+              {reason}
+            </label>
+          ))}
         </div>
-        <p><b>Confira se este é o perfil que você irá denúnciar para evitar conflitos e denúncias equivocadas.</b></p>
+        <p>
+          <b>
+            Confira se este é o perfil que você irá denúnciar para evitar
+            conflitos e denúncias equivocadas.
+          </b>
+        </p>
+        <h3>
+          Usuário a ser denunciado:{" "}
+          <a href={`/u/${params.username}`}>{params.username}</a>
+        </h3>
         <div className="buttons">
-          <Link href={`/${params.username}`} className="btn">
+          <Link href={`/u/${params.username}`} className="btn">
             Cancelar
           </Link>
           <button className="active" onClick={handleSubmit}>
