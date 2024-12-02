@@ -232,9 +232,13 @@ export default function UserPage({ params }) {
               />
             </div>
             <div className="user_header_info">
-              <small className="username"><b>{user.username}</b></small>
+              <small className="username">
+                <b>{user.username}</b>
+              </small>
               <small>
-                <span>{posts.filter(p=>p.isDraft==false).length} postagens</span>
+                <span>
+                  {posts.filter((p) => p.isDraft == false).length} postagens
+                </span>
                 {userFollowers == 0 ? (
                   <span>0 seguidores</span>
                 ) : (
@@ -329,13 +333,13 @@ export default function UserPage({ params }) {
                     Denunciar <Warning />
                   </Link>
                 )}
-                
-            <ShareMenu
-              ref={shareRef}
-              text={`Veja o perfil do(a) ${user.name} no text.dev.br!`}
-              path={"u/" + user.username}
-              inside={true}
-            />
+
+                <ShareMenu
+                  ref={shareRef}
+                  text={`Veja o perfil de ${user.name} no text.dev.br!`}
+                  path={"u/" + user.username}
+                  inside={true}
+                />
               </div>
             </details>
           </div>
@@ -412,20 +416,22 @@ export default function UserPage({ params }) {
         {posts.length === 0 ? (
           <p>Este usuário não possui nenhuma postagem.</p>
         ) : !isOwnProfile ? (
-          posts.filter(p=>p.isDraft==false).map((post, index) => (
-            <PostCard
-              key={index}
-              post={post}
-              author={user}
-              savedPosts={savedPosts}
-              setSavedPosts={setSavedPosts}
-              likedPosts={likedPosts}
-              setLikedPosts={setLikedPosts}
-              onSavePostChange={handleSavePostChange}
-              onLikePostChange={handleLikePostChange}
-              isProfile={isOwnProfile}
-            />
-          ))
+          posts
+            .filter((p) => p.isDraft == false)
+            .map((post, index) => (
+              <PostCard
+                key={index}
+                post={post}
+                author={user}
+                savedPosts={savedPosts}
+                setSavedPosts={setSavedPosts}
+                likedPosts={likedPosts}
+                setLikedPosts={setLikedPosts}
+                onSavePostChange={handleSavePostChange}
+                onLikePostChange={handleLikePostChange}
+                isProfile={isOwnProfile}
+              />
+            ))
         ) : activeTab === "all" ? (
           posts.map((post, index) => (
             <PostCard
