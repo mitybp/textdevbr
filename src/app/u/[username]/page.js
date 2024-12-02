@@ -232,9 +232,9 @@ export default function UserPage({ params }) {
               />
             </div>
             <div className="user_header_info">
-              <small className="username">{user.username}</small>
+              <small className="username"><b>{user.username}</b></small>
               <small>
-                <span>{posts.length} postagens</span>
+                <span>{posts.filter(p=>p.isDraft==false).length} postagens</span>
                 {userFollowers == 0 ? (
                   <span>0 seguidores</span>
                 ) : (
@@ -329,13 +329,15 @@ export default function UserPage({ params }) {
                     Denunciar <Warning />
                   </Link>
                 )}
-              </div>
-            </details>
+                
             <ShareMenu
               ref={shareRef}
               text={`Veja o perfil do(a) ${user.name} no text.dev.br!`}
               path={"u/" + user.username}
+              inside={true}
             />
+              </div>
+            </details>
           </div>
         </div>
         <div className="user_footer">
