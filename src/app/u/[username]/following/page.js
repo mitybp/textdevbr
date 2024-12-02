@@ -8,7 +8,7 @@ import toast from "react-hot-toast";
 
 const Following = () => {
   const [following, setFollowing] = useState([]);
-  const [currentUserUid, setCurrentUserUid] = useState(null);
+  const [currentUserUid, setCurrentUserUid] = useState(JSON.parse(localStorage.getItem("user")).uid||null);
 
   useEffect(() => {
     const fetchFollowing = async () => {
@@ -104,7 +104,7 @@ const Following = () => {
         {following.length > 0 ? (
           following.map((user) => (
             <div key={user.uid} className="user-card">
-              <Link href={`/${user.username}`}>
+              <Link href={`/u/${user.username}`}>
                 <img src={user.photoURL} alt={`${user.username}'s avatar`} />
                 <span>{user.username}</span>
               </Link>

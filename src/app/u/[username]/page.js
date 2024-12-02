@@ -410,7 +410,7 @@ export default function UserPage({ params }) {
         {posts.length === 0 ? (
           <p>Este usuário não possui nenhuma postagem.</p>
         ) : !isOwnProfile ? (
-          posts.map((post, index) => (
+          posts.filter(p=>p.isDraft==false).map((post, index) => (
             <PostCard
               key={index}
               post={post}
