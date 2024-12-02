@@ -64,37 +64,23 @@ const PostPage = ({ params }) => {
   }, []);
 
   useEffect(() => {
-    const signIn = onAuthStateChanged(auth, async (u) => {
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
-        const docRef = doc(db, "users", u.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const userData = docSnap.data();
+        let userDoc = await getDoc(doc(db, "users", u.uid));
+        if (userDoc.exists()) {
+          let userData = userDoc.data();
           setUser(userData);
-          setLikedPosts(new Set(userData.likedPosts || []));
-          setSavedPosts(new Set(userData.savedPosts || []));
-        } else {
-          const userData = {
-            description: "",
-            email: u.email,
-            emailVerified: u.emailVerified,
-            joinedAt: Timestamp.now(),
-            name: u.displayName,
-            username: strFormat(u.displayName),
-            photoURL: u.photoURL,
-            uid: u.uid,
-            website: "",
-            github: "",
-            savedPosts: [],
-          };
-          await setDoc(docRef, userData);
-          setUser(userData);
+          localStorage.setItem("user", JSON.stringify(userData));
         }
       } else {
         setUser(null);
       }
     });
 
+    return () => unsubscribe();
+  }, [router]);
+
+  useEffect(() => {
     const fetchPostData = async () => {
       if (username && post_path) {
         const postRef = query(
@@ -144,8 +130,6 @@ const PostPage = ({ params }) => {
       }
     };
     fetchPostData();
-
-    return () => signIn();
   }, [username, post_path, router]);
 
   const formatTimestamp = (timestamp) => {
@@ -206,14 +190,39 @@ const PostPage = ({ params }) => {
     }
   };
 
+  const handleSavePost = async (postId) => {
+    try {
+      const userRef = doc(db, "users", user.uid);
+
+      if (savedPosts.has(postId)) {
+        setSavedPosts((prev) => {
+          const updated = new Set(prev);
+          updated.delete(postId);
+          return updated;
+        });
+        await updateDoc(userRef, { savedPosts: arrayRemove(postId) });
+        toast.success("Postagem removida dos salvos!");
+      }else{
+        setSavedPosts((prev) => new Set(prev).add(postId));
+        await updateDoc(userRef, { savedPosts: arrayUnion(postId) });
+        toast.success("Postagem salva com sucesso!");
+      }
+    } catch (error) {
+      toast.error("Erro ao salvar/remover dos salvos a postagem!");
+      console.error(error);
+    }
+  };
+
   if (!postData || !authorData) {
     return <div>Carregando...</div>;
   }
 
-  
   const isOwnProfile = user && username === user.username;
 
-  if (username=="settings" && (post_path=="account" || post_path=="profile")) {
+  if (
+    username == "settings" &&
+    (post_path == "account" || post_path == "profile")
+  ) {
     return;
   }
   return (
@@ -223,7 +232,9 @@ const PostPage = ({ params }) => {
           <div className="post_header_info">
             <h1>{postData.title}</h1>
             <small>
-              <Link href={`/u/${authorData.username}`}>{authorData.username}</Link>
+              <Link href={`/u/${authorData.username}`}>
+                {authorData.username}
+              </Link>
               <span>{"•"}</span>
               <span
                 className="tooltip"
@@ -236,22 +247,22 @@ const PostPage = ({ params }) => {
                 {Math.ceil(String(content).split(/\s/g).length / 200)} min. de
                 leitura
               </span>
-              {postData.isDraft&&(
+              {postData.isDraft && (
                 <>
-              <span>{"•"}</span>
-              <span className="alert">Rascunho</span>
-              </>
+                  <span>{"•"}</span>
+                  <span className="alert">Rascunho</span>
+                </>
               )}
             </small>
             <div className="post_footer">
               <button
                 onClick={() => handleLikePost(postData.id)}
-                className={`icon-label ${likedPosts.has(postData.id) && "active"}`}
+                className={`${likes == 0 ? "icon" : "icon-label"} ${likedPosts?.has(postData.id) ? "active" : ""}`}
               >
                 <Heart
                   weight={likedPosts.has(postData.id) ? "fill" : "regular"}
                 />
-                {likes}
+                {likes != 0 && likes}
               </button>
 
               <button
@@ -262,6 +273,12 @@ const PostPage = ({ params }) => {
                   weight={savedPosts?.has(postData.id) ? "fill" : "regular"}
                 />
               </button>
+              <ShareMenu
+                side="right"
+                ref={shareRef}
+                text={`Veja a postagem ${postData.title} de ${authorData.name} no text.dev.br!`}
+                path={`u/${username}/${post_path}`}
+              />
             </div>
           </div>
 
@@ -300,12 +317,6 @@ const PostPage = ({ params }) => {
                 )}
               </div>
             </details>
-            <ShareMenu
-              side="left"
-              ref={shareRef}
-              text={`Veja a postagem ${postData.title} de ${authorData.name} no text.dev.br!`}
-              path={`u/${username}/${post_path}`}
-            />
           </div>
         </div>
 

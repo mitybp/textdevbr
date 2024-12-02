@@ -5,7 +5,7 @@ import {
   DotsThreeVertical,
   Heart,
   PencilSimple,
-  Warning
+  Warning,
 } from "@phosphor-icons/react";
 import {
   arrayRemove,
@@ -220,6 +220,12 @@ const PostCard = (props) => {
               weight={savedPosts?.has(post.id) ? "fill" : "regular"}
             />
           </button>
+          <ShareMenu
+            side="right"
+            ref={shareRef}
+            text={`Veja a postagem ${post.title} de ${author.username} no text.dev.br!`}
+            path={`u/${author.username}/${post.path}`}
+          />
         </div>
       </div>
       <div className="post_card_buttons">
@@ -263,12 +269,6 @@ const PostCard = (props) => {
             )}
           </div>
         </details>
-        <ShareMenu
-          side="left"
-          ref={shareRef}
-          text={`Veja a postagem ${post.title} de ${author.username} no text.dev.br!`}
-          path={`u/${author.username}/${post.path}`}
-        />
       </div>
     </div>
   );

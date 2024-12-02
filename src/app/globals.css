@@ -141,6 +141,7 @@ footer {
     flex-direction: column;
     align-items: center;
     width: 100%;
+    text-align: center;
   }
   @media (width<360px) {
     grid-template-columns: 1fr;
@@ -278,7 +279,6 @@ hr {
   }
 }
 
-
 table {
   font-family: arial, sans-serif;
   border-collapse: collapse;
@@ -297,7 +297,8 @@ table {
   }
 }
 p > code,
-pre > code, code {
+pre > code,
+code {
   background-color: var(--secondary-gray);
   color: var(--inlinecode);
   padding: 0.2em 0.4em;
@@ -396,7 +397,8 @@ section.doc {
       text-align: center;
     }
   }
-  h2, h3 {
+  h2,
+  h3 {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -408,19 +410,19 @@ section.doc {
       display: block;
     }
   }
-  ul.content-table{
+  ul.content-table {
     width: 40%;
     border: 2px solid var(--gray);
     border-collapse: collapse;
     list-style: none;
     padding: 10px;
     border-radius: 15px;
-    li{
+    li {
       height: 30px;
     }
-    ul{
+    ul {
       list-style: none;
-      li{
+      li {
         padding-left: 10px;
       }
     }
@@ -490,7 +492,7 @@ section.user_info {
       align-items: center;
       margin-bottom: 6px;
       gap: 6px;
-      .user_header_sidebar{
+      .user_header_sidebar {
         position: absolute;
         right: 0;
       }
@@ -690,7 +692,7 @@ section.form {
         width: 200px;
         height: 30px;
         cursor: pointer;
-        svg{
+        svg {
           margin-left: 6px;
         }
         &:hover {
@@ -797,8 +799,8 @@ section.error {
 
 section.tabs {
   display: flex;
-  gap: 6px;
   margin-top: 10px;
+  gap: 6px;
   &.top {
     margin-block: 0 10px;
   }
@@ -989,17 +991,17 @@ textarea {
 /** CARD DE POSTAGEM */
 div.post_card {
   padding: 10px;
-  /* border: 1px solid var(--gray); */
-  /* border-radius: 15px; */
   border-bottom: 1px solid var(--gray);
-  padding-bottom: 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
 
   &:last-child {
     border-bottom: none;
-    padding-bottom: 10px;
+  }
+
+  h3 a{
+    text-decoration: none;
   }
 
   div.post_card_info {
@@ -1033,8 +1035,6 @@ div.post_card {
   div.post_card_buttons {
     display: flex;
     align-self: flex-start;
-    flex-direction: column;
-    gap: 4px;
   }
 }
 
@@ -1093,7 +1093,8 @@ small {
     border-radius: 6px;
     width: min-content;
   }
-  .gray, &.gray{
+  .gray,
+  &.gray {
     background-color: var(--secondary-gray);
     color: var(--text);
     padding-inline: 6px;
@@ -1150,7 +1151,7 @@ small {
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
-    background-color: var(--gray);
+    background-color: var(--secondary-gray);
     padding: 6px 8px;
     border-radius: 6px;
     white-space: nowrap;

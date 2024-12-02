@@ -32,7 +32,6 @@ export default function Home() {
   const [savedPosts, setSavedPosts] = useState(new Set());
   const [following, setFollowing] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [order, setOrder] = useState("desc");
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [tab, setTab] = useState("explore");
@@ -58,7 +57,7 @@ export default function Home() {
     } else {
       fetchPosts(currentSearch);
     }
-  }, [tab, order, currentSearch]);
+  }, [tab, currentSearch]);
 
   useEffect(() => {
     if (!loading && hasMore) {
@@ -110,7 +109,6 @@ export default function Home() {
       } else {
         q = query(
           collection(db, "posts"),
-          orderBy("date", order),
           where("isDraft", "==", false),
           limit(10)
         );
@@ -158,7 +156,6 @@ export default function Home() {
         q = query(
           collection(db, "posts"),
           where("author", "in", following),
-          orderBy("date", order),
           where("isDraft", "==", false),
           limit(10)
         );
@@ -266,12 +263,6 @@ export default function Home() {
         </div>
         <button onClick={handleSearch} className="icon active">
           <MagnifyingGlass />
-        </button>
-        <button
-          className="icon"
-          onClick={() => setOrder(order === "asc" ? "desc" : "asc")}
-        >
-          <ArrowDown style={{ rotate: order === "asc" ? 0 : 180 }} />
         </button>
       </section>
 

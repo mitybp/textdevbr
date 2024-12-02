@@ -3,23 +3,21 @@ import { auth, db } from "@/firebase";
 import {
   Gear,
   Moon,
+  PencilSimple,
   PlusCircle,
+  Pulse,
   SignIn,
   SignOut,
   Sun,
-  User,
-  Heart,
-  PencilSimple,
-  BellSimple,
-  Pulse,
+  User
 } from "@phosphor-icons/react";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import Cookies from "js-cookie";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import toast, { Toaster } from "react-hot-toast";
-import Cookies from "js-cookie";
-import { doc, getDoc } from "firebase/firestore";
+import { Toaster } from "react-hot-toast";
 
 import Link from "next/link";
 
