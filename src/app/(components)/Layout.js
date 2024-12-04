@@ -25,9 +25,7 @@ export default function Layout({ children }) {
   const [user, setUser] = useState(null);
   const menuRef = useRef(null);
   const router = useRouter();
-  const [newActivity, setNewActivity] = useState(
-    JSON.parse(localStorage.getItem("newActivity"))
-  );
+  const [newActivity, setNewActivity] = useState(null);
 
   useEffect(() => {
     // Handle theme from cookies

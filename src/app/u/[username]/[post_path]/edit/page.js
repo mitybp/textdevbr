@@ -46,7 +46,7 @@ const EditPost = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [source, setSource] = useState("");
-  const [user, setUser] = useState(localStorage.getItem("user"));
+  const [user, setUser] = useState(null);
   const [post, setPost] = useState(null);
   const [tabIsPreview, setTabIsPreview] = useState(false);
   const router = useRouter();
