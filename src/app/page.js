@@ -266,7 +266,7 @@ export default function Home() {
         </button>
       </section>
 
-      <div className="posts-list">
+      <div className="post_list">
         {posts.map((post) => (
           <PostCard
             key={post.id}

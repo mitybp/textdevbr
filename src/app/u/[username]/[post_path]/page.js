@@ -1,8 +1,10 @@
 "use client";
+import ReplyCard from "@/(components)/ReplyCard";
 import ShareMenu from "@/(components)/ShareMenu";
 import { auth, db } from "@/firebase";
 import {
   BookmarkSimple,
+  ChatTeardrop,
   DotsThreeVertical,
   Heart,
   PencilSimple,
@@ -18,8 +20,6 @@ import {
   getDocs,
   increment,
   query,
-  setDoc,
-  Timestamp,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -27,10 +27,12 @@ import { marked } from "marked";
 import markedAlert from "marked-alert";
 import { baseUrl } from "marked-base-url";
 import customHeadingId from "marked-custom-heading-id";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 const extendedTables = require("marked-extended-tables");
+import { formatTimeAgo, formatFullDate } from "@/(components)/format";
 
 const PostPage = ({ params }) => {
   const { username, post_path } = params;
@@ -38,10 +40,11 @@ const PostPage = ({ params }) => {
   const [postData, setPostData] = useState(null);
   const [authorData, setAuthorData] = useState(null);
   const [content, setContent] = useState("");
+  const [postReplies, setPostReplies] = useState(null);
   const [likedPosts, setLikedPosts] = useState(new Set());
   const [likes, setLikes] = useState(0);
   const [savedPosts, setSavedPosts] = useState(new Set());
-  const [saves, setSaves] = useState(0);
+  const [parentData, setParentData] = useState(null);
 
   const menuRef = useRef(null);
   const shareRef = useRef(null);
@@ -81,6 +84,22 @@ const PostPage = ({ params }) => {
   }, [router]);
 
   useEffect(() => {
+    const fetchUserInteractions = async () => {
+      if (user) {
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          setLikedPosts(new Set(userData.likedPosts || []));
+          setSavedPosts(new Set(userData.savedPosts || []));
+        }
+      }
+    };
+
+    fetchUserInteractions();
+  }, [user]);
+
+  useEffect(() => {
     const fetchPostData = async () => {
       if (username && post_path) {
         const postRef = query(
@@ -115,7 +134,6 @@ const PostPage = ({ params }) => {
         setLikes(postData.likes);
         setPostData({ ...postData, id: postId });
         setAuthorData(authorData);
-
         marked.use([
           markedAlert(),
           baseUrl("https://text.dev.br/"),
@@ -127,97 +145,136 @@ const PostPage = ({ params }) => {
           breaks: true,
         });
         setContent(mdContent);
+
+        if (postData.type == "post") {
+          const resolvedReplies = await Promise.all(
+            postData.replies.map(async (reply) => {
+              const replyRef = doc(db, "posts", reply);
+              const replySnap = await getDoc(replyRef);
+              const replyData = replySnap.data();
+
+              const replyAuthorRef = doc(db, "users", replyData.author);
+              const replyAuthorSnap = await getDoc(replyAuthorRef);
+              return {
+                ...replyData,
+                author: { username: replyAuthorSnap.data().username },
+                id: replySnap.id,
+              };
+            })
+          );
+          setPostReplies(resolvedReplies);
+        } else {
+          const parentSnap = await getDoc(doc(db, "posts", postData.parentId));
+          const parentData = parentSnap.data();
+          const parentAuthorSnap = await getDoc(
+            doc(db, "users", parentData.author)
+          );
+          const parentAuthorData = parentAuthorSnap.data();
+
+          setParentData({
+            title: parentData.title,
+            path: parentData.path,
+            author: parentAuthorData.username,
+          });
+        }
       }
     };
     fetchPostData();
   }, [username, post_path, router]);
 
-  const formatTimestamp = (timestamp) => {
-    const now = new Date();
-    const date = timestamp.toDate();
-    const diff = now - date;
-    const diffInMinutes = Math.floor(diff / (1000 * 60));
-    const diffInHours = Math.floor(diff / (1000 * 60 * 60));
-    const diffInDays = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (diffInDays >= 2) {
-      return `${date.getDate().toString().padStart(2, "0")}/${(
-        date.getMonth() + 1
-      )
-        .toString()
-        .padStart(2, "0")}/${date.getFullYear()} - ${date
-        .getHours()
-        .toString()
-        .padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
-    } else if (diffInDays >= 1) {
-      return `${diffInDays} ${diffInDays === 1 ? "dia" : "dias"} atrás`;
-    } else if (diffInHours >= 1) {
-      return `${diffInHours} ${diffInHours === 1 ? "hora" : "horas"} atrás`;
-    } else {
-      return `${diffInMinutes} ${
-        diffInMinutes === 1 ? "minuto" : "minutos"
-      } atrás`;
-    }
-  };
-
   const handleLikePost = async (postId) => {
     try {
-      const userRef = doc(db, "users", user.uid);
-      const postRef = doc(db, "posts", postId);
-
-      await updateDoc(postRef, {
-        likes: increment(likedPosts.has(postId) ? -1 : 1),
-      });
-
-      setLikes((prevLikes) => prevLikes + (likedPosts.has(postId) ? -1 : 1));
-
+      const user = auth.currentUser;
+      if (!user) {
+        toast.error("Você precisa estar logado para curtir postagens!");
+        return;
+      }
+  
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+      const postDocRef = doc(db, "posts", postId);
+  
+      if (!userDoc.exists()) {
+        toast.error("Usuário não encontrado!");
+        return;
+      }
+  
+      const userData = userDoc.data();
+      const likedPosts = new Set(userData.likedPosts || []);
+  
       if (likedPosts.has(postId)) {
-        setLikedPosts((prev) => {
-          const updated = new Set(prev);
-          updated.delete(postId);
-          return updated;
+        likedPosts.delete(postId);
+        await updateDoc(postDocRef, {
+          likes: increment(-1),
         });
-        await updateDoc(userRef, { likedPosts: arrayRemove(postId) });
-        toast.success("Postagem descurtida!");
+        setLikes((prevLikes) => prevLikes - 1); // Atualiza a contagem local de likes
+        toast.error("Curtida removida!");
       } else {
-        setLikedPosts((prev) => new Set(prev).add(postId));
-        await updateDoc(userRef, { likedPosts: arrayUnion(postId) });
+        likedPosts.add(postId);
+        await updateDoc(postDocRef, {
+          likes: increment(1),
+        });
+        setLikes((prevLikes) => prevLikes + 1); // Atualiza a contagem local de likes
+        localStorage.setItem("newActivity", true);
         toast.success("Postagem curtida!");
       }
+  
+      // Atualiza o Firestore
+      await updateDoc(userDocRef, { likedPosts: Array.from(likedPosts) });
+  
+      // Atualiza o estado local
+      setLikedPosts(likedPosts);
     } catch (error) {
-      toast.error("Erro ao curtir/descurtir a postagem!");
-      console.error(error);
+      console.error("Erro ao curtir postagem:", error);
+      toast.error("Erro ao curtir postagem!");
     }
   };
+  
 
   const handleSavePost = async (postId) => {
     try {
-      const userRef = doc(db, "users", user.uid);
+      const user = auth.currentUser;
+      if (!user) {
+        toast.error("Você precisa estar logado para salvar postagens!");
+        return;
+      }
+
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        toast.error("Usuário não encontrado!");
+        return;
+      }
+
+      const userData = userDoc.data();
+      const savedPosts = new Set(userData.savedPosts || []);
 
       if (savedPosts.has(postId)) {
-        setSavedPosts((prev) => {
-          const updated = new Set(prev);
-          updated.delete(postId);
-          return updated;
-        });
-        await updateDoc(userRef, { savedPosts: arrayRemove(postId) });
-        toast.success("Postagem removida dos salvos!");
-      }else{
-        setSavedPosts((prev) => new Set(prev).add(postId));
-        await updateDoc(userRef, { savedPosts: arrayUnion(postId) });
-        toast.success("Postagem salva com sucesso!");
+        savedPosts.delete(postId);
+        toast.error("Postagem removida dos salvos!");
+      } else {
+        savedPosts.add(postId);
+        localStorage.setItem("newActivity", true);
+        toast.success("Postagem salva!");
       }
+
+      // Atualiza o Firestore
+      await updateDoc(userDocRef, { savedPosts: Array.from(savedPosts) });
+
+      // Atualiza o estado local
+      setSavedPosts(savedPosts);
     } catch (error) {
-      toast.error("Erro ao salvar/remover dos salvos a postagem!");
-      console.error(error);
+      console.error("Erro ao salvar postagem:", error);
+      toast.error("Erro ao salvar postagem!");
     }
   };
 
   if (!postData || !authorData) {
     return <div>Carregando...</div>;
+  } else if (postData.type == "post" && !postReplies) {
+    return <div>Carregando...</div>;
   }
-
-  const isOwnProfile = user && username === user.username;
 
   if (
     username == "settings" &&
@@ -225,12 +282,25 @@ const PostPage = ({ params }) => {
   ) {
     return;
   }
+  const isOwnProfile = user && username === user.username;
   return (
     <>
       <section className="post_info">
         <div className="post_header">
           <div className="post_header_info">
-            <h1>{postData.title}</h1>
+            {postData.type == "post" ? (
+              <h1>{postData.title}</h1>
+            ) : (
+              <small>
+                Em resposta à
+                <a
+                  href={`/u/${parentData?.author}/${parentData?.path}`}
+                  className="post_header_reply_parent"
+                >
+                  <i>{parentData?.title}</i>
+                </a>
+              </small>
+            )}
             <small>
               <Link href={`/u/${authorData.username}`}>
                 {authorData.username}
@@ -238,15 +308,19 @@ const PostPage = ({ params }) => {
               <span>{"•"}</span>
               <span
                 className="tooltip"
-                data-value={formatTimestamp(postData.date)}
+                data-value={formatFullDate(postData.date)}
               >
-                {formatTimestamp(postData.date)}
+                {formatTimeAgo(postData.date)}
               </span>
-              <span>{"•"}</span>
-              <span>
-                {Math.ceil(String(content).split(/\s/g).length / 200)} min. de
-                leitura
-              </span>
+              {postData.type == "post" && (
+                <>
+                  <span>{"•"}</span>
+                  <span>
+                    {Math.ceil(String(content).split(/\s/g).length / 200)} min.
+                    de leitura
+                  </span>
+                </>
+              )}
               {postData.isDraft && (
                 <>
                   <span>{"•"}</span>
@@ -273,10 +347,11 @@ const PostPage = ({ params }) => {
                   weight={savedPosts?.has(postData.id) ? "fill" : "regular"}
                 />
               </button>
+
               <ShareMenu
                 side="right"
                 ref={shareRef}
-                text={`Veja a postagem ${postData.title} de ${authorData.name} no text.dev.br!`}
+                text={`Veja a postagem ${postData.title} de ${authorData.username} no text.dev.br!`}
                 path={`u/${username}/${post_path}`}
               />
             </div>
@@ -327,10 +402,37 @@ const PostPage = ({ params }) => {
           />
         </article>
       </section>
+      {postData?.type == "post" && (
+        <>
+          <hr />
+          <section className="replies">
+            <div className="reply_header">
+              <h3>Comentários</h3>
+              <button className="icon-label active">
+                Escrever <PencilSimple />
+              </button>
+            </div>
+
+            <div className="reply_list">
+              {postReplies &&
+                postReplies
+                  .reverse()
+                  .map((reply) => (
+                    <ReplyCard
+                      reply={reply}
+                      key={reply.id}
+                      likedPosts={likedPosts}
+                      savedPosts={savedPosts}
+                      handleLikePost={handleLikePost}
+                      handleSavePost={handleSavePost}
+                    />
+                  ))}
+            </div>
+          </section>
+        </>
+      )}
     </>
   );
 };
-
-import Link from "next/link";
 
 export default PostPage;

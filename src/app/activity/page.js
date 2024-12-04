@@ -4,11 +4,12 @@ import PostCard from "@/(components)/PostCard";
 import { auth, db } from "@/firebase";
 import { BookmarksSimple, Heart, HouseSimple } from "@phosphor-icons/react";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, increment } from "firebase/firestore";
 import { useEffect, useState, Suspense } from "react";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import ReplyCard from "@/(components)/ReplyCard";
 
 export default function Activity({ searchParams }) {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function Activity({ searchParams }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    localStorage.setItem("newActivity", false);
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         await fetchUserActivity(user.uid);
@@ -85,8 +87,8 @@ export default function Activity({ searchParams }) {
       return {
         ...postData,
         author: {
-          username: authorData.username || "Anônimo",
           uid: authorData.uid,
+          username: authorData.username,
         },
       };
     });
@@ -100,21 +102,92 @@ export default function Activity({ searchParams }) {
     router.replace(`/activity/?tab=${newTab}`);
   };
 
-  const handleLikePostChange = (postId, isLiked) => {
-    setLikedPostIdsSet((prev) => {
-      const newSet = new Set(prev);
-      isLiked ? newSet.add(postId) : newSet.delete(postId);
-      return newSet;
-    });
+  const handleLikePost = async (postId) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        toast.error("Você precisa estar logado para curtir postagens!");
+        return;
+      }
+  
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+      const postDocRef = doc(db, "posts", postId);
+  
+      if (!userDoc.exists()) {
+        toast.error("Usuário não encontrado!");
+        return;
+      }
+  
+      const userData = userDoc.data();
+      const likedPosts = new Set(userData.likedPosts || []);
+  
+      if (likedPosts.has(postId)) {
+        likedPosts.delete(postId);
+        await updateDoc(postDocRef, {
+          likes: increment(-1),
+        });
+        toast.error("Curtida removida!");
+      } else {
+        likedPosts.add(postId);
+        await updateDoc(postDocRef, {
+          likes: increment(1),
+        });
+        localStorage.setItem("newActivity", true);
+        toast.success("Postagem curtida!");
+      }
+  
+      // Atualiza o Firestore
+      await updateDoc(userDocRef, { likedPosts: Array.from(likedPosts) });
+  
+      // Atualiza o estado local
+      setLikedPosts(likedPosts);
+    } catch (error) {
+      console.error("Erro ao curtir postagem:", error);
+      toast.error("Erro ao curtir postagem!");
+    }
   };
+  
 
-  const handleSavePostChange = (postId, isSaved) => {
-    setSavedPostIdsSet((prev) => {
-      const newSet = new Set(prev);
-      isSaved ? newSet.add(postId) : newSet.delete(postId);
-      return newSet;
-    });
+  const handleSavePost = async (postId) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        toast.error("Você precisa estar logado para salvar postagens!");
+        return;
+      }
+
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        toast.error("Usuário não encontrado!");
+        return;
+      }
+
+      const userData = userDoc.data();
+      const savedPosts = new Set(userData.savedPosts || []);
+
+      if (savedPosts.has(postId)) {
+        savedPosts.delete(postId);
+        toast.error("Postagem removida dos salvos!");
+      } else {
+        savedPosts.add(postId);
+        localStorage.setItem("newActivity", true);
+        toast.success("Postagem salva!");
+      }
+
+      // Atualiza o Firestore
+      await updateDoc(userDocRef, { savedPosts: Array.from(savedPosts) });
+
+      // Atualiza o estado local
+      setSavedPosts(savedPosts);
+    } catch (error) {
+      console.error("Erro ao salvar postagem:", error);
+      toast.error("Erro ao salvar postagem!");
+    }
   };
+  
 
   const renderPosts = (postsSet) => {
     const postsArray = Array.from(postsSet);
@@ -127,20 +200,30 @@ export default function Activity({ searchParams }) {
         </Link>
       </section>
     ) : (
-      postsArray.map((post) => (
-        <PostCard
-          key={post.id}
-          post={post}
-          author={post.author}
-          likedPosts={likedPostIdsSet}
-          savedPosts={savedPostIdsSet}
-          setLikedPosts={setLikedPosts}
-          setSavedPosts={setSavedPosts}
-          isProfile={false}
-          onLikePostChange={handleLikePostChange}
-          onSavePostChange={handleSavePostChange}
-        />
-      ))
+      postsArray.map((post) =>
+        post.type == "post" ? (
+          <PostCard
+            key={post.id}
+            post={post}
+            author={post.author}
+            likedPosts={likedPostIdsSet}
+            savedPosts={savedPostIdsSet}
+            handleLikePost={handleLikePost}
+            handleSavePost={handleSavePost}
+            isProfile={false}
+          />
+        ) : (
+          <ReplyCard
+            key={post.id}
+            reply={post}
+            inList={true}
+            likedPosts={likedPostIdsSet}
+            savedPosts={savedPostIdsSet}
+            handleLikePost={handleLikePost}
+            handleSavePost={handleSavePost}
+          />
+        )
+      )
     );
   };
 
@@ -152,7 +235,8 @@ export default function Activity({ searchParams }) {
           className={`icon-label ${tab === "liked" ? "active" : ""}`}
           onClick={() => handleTabChange("liked")}
         >
-          <Heart weight={tab === "liked" ? "fill" : "regular"} /> Curtidos <small className="gray">{likedPostIdsSet.size}</small>
+          <Heart weight={tab === "liked" ? "fill" : "regular"} /> Curtidos{" "}
+          <small className="gray">{likedPostIdsSet.size}</small>
         </button>
         <button
           className={`icon-label ${tab === "saved" ? "active" : ""}`}

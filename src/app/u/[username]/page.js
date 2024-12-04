@@ -4,6 +4,7 @@ import ShareMenu from "@/(components)/ShareMenu";
 import { auth, db } from "@/firebase";
 import {
   ArrowSquareOut,
+  Cake,
   CardsThree,
   Circle,
   DotsThreeVertical,
@@ -14,6 +15,7 @@ import {
   InstagramLogo,
   LinkedinLogo,
   PencilSimple,
+  PlusCircle,
   TwitterLogo,
   UserMinus,
   UserPlus,
@@ -40,6 +42,7 @@ import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 import Link from "next/link";
+import { formatTimeAgo } from "@/(components)/format";
 
 export default function UserPage({ params }) {
   const searchParams = useSearchParams();
@@ -188,29 +191,89 @@ export default function UserPage({ params }) {
     };
   }, []);
 
-  const handleSavePostChange = (postId, isSaved) => {
-    setSavedPosts((prevSavedPosts) => {
-      const updatedSavedPosts = new Set(prevSavedPosts);
-      if (isSaved) {
-        updatedSavedPosts.add(postId);
-      } else {
-        updatedSavedPosts.delete(postId);
+  const handleLikePost = async (postId) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        toast.error("Você precisa estar logado para curtir postagens!");
+        return;
       }
-      return updatedSavedPosts;
-    });
+
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+      const postDocRef = doc(db, "posts", postId);
+
+      if (!userDoc.exists()) {
+        toast.error("Usuário não encontrado!");
+        return;
+      }
+
+      const userData = userDoc.data();
+      const likedPosts = new Set(userData.likedPosts || []);
+
+      if (likedPosts.has(postId)) {
+        likedPosts.delete(postId);
+        await updateDoc(postDocRef, {
+          likes: increment(-1),
+        });
+        toast.error("Curtida removida!");
+      } else {
+        likedPosts.add(postId);
+        await updateDoc(postDocRef, {
+          likes: increment(1),
+        });
+        localStorage.setItem("newActivity", true);
+        toast.success("Postagem curtida!");
+      }
+
+      // Atualiza o Firestore
+      await updateDoc(userDocRef, { likedPosts: Array.from(likedPosts) });
+
+      // Atualiza o estado local
+      setLikedPosts(likedPosts);
+    } catch (error) {
+      console.error("Erro ao curtir postagem:", error);
+      toast.error("Erro ao curtir postagem!");
+    }
   };
 
-  // Função para atualizar posts curtidos
-  const handleLikePostChange = (postId, isLiked) => {
-    setLikedPosts((prevLikedPosts) => {
-      const updatedLikedPosts = new Set(prevLikedPosts);
-      if (isLiked) {
-        updatedLikedPosts.add(postId);
-      } else {
-        updatedLikedPosts.delete(postId);
+  const handleSavePost = async (postId) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        toast.error("Você precisa estar logado para salvar postagens!");
+        return;
       }
-      return updatedLikedPosts;
-    });
+
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        toast.error("Usuário não encontrado!");
+        return;
+      }
+
+      const userData = userDoc.data();
+      const savedPosts = new Set(userData.savedPosts || []);
+
+      if (savedPosts.has(postId)) {
+        savedPosts.delete(postId);
+        toast.error("Postagem removida dos salvos!");
+      } else {
+        savedPosts.add(postId);
+        localStorage.setItem("newActivity", true);
+        toast.success("Postagem salva!");
+      }
+
+      // Atualiza o Firestore
+      await updateDoc(userDocRef, { savedPosts: Array.from(savedPosts) });
+
+      // Atualiza o estado local
+      setSavedPosts(savedPosts);
+    } catch (error) {
+      console.error("Erro ao salvar postagem:", error);
+      toast.error("Erro ao salvar postagem!");
+    }
   };
 
   if (!user || !posts) return <div>Carregando...</div>;
@@ -253,6 +316,10 @@ export default function UserPage({ params }) {
                     {userFollowing} seguindo
                   </Link>
                 )}
+                <span>
+                  <Cake />
+                  {formatTimeAgo(user.joinedAt)}
+                </span>
               </small>
               <div className="user_header_info_social">
                 {[
@@ -338,7 +405,7 @@ export default function UserPage({ params }) {
                   ref={shareRef}
                   text={`Veja o perfil de ${user.name} no text.dev.br!`}
                   path={"u/" + user.username}
-                  inside={true}
+                  side="inside"
                 />
               </div>
             </details>
@@ -414,7 +481,17 @@ export default function UserPage({ params }) {
       )}
       <section className="list">
         {posts.length === 0 ? (
-          <p>Este usuário não possui nenhuma postagem.</p>
+          isOwnProfile ? (
+            <section className="explore">
+              <p>Você ainda não possui postagens</p>
+              <Link href="/new" className="btn active icon-label">
+                <PlusCircle />
+                Criar postagem
+              </Link>
+            </section>
+          ) : (
+            <p>Este usuário ainda não possui postagens!</p>
+          )
         ) : !isOwnProfile ? (
           posts
             .filter((p) => p.isDraft == false)
@@ -424,11 +501,9 @@ export default function UserPage({ params }) {
                 post={post}
                 author={user}
                 savedPosts={savedPosts}
-                setSavedPosts={setSavedPosts}
                 likedPosts={likedPosts}
-                setLikedPosts={setLikedPosts}
-                onSavePostChange={handleSavePostChange}
-                onLikePostChange={handleLikePostChange}
+                handleLikePost={handleLikePost}
+                handleSavePost={handleSavePost}
                 isProfile={isOwnProfile}
               />
             ))
@@ -439,11 +514,9 @@ export default function UserPage({ params }) {
               post={post}
               author={user}
               savedPosts={savedPosts}
-              setSavedPosts={setSavedPosts}
               likedPosts={likedPosts}
-              setLikedPosts={setLikedPosts}
-              onSavePostChange={handleSavePostChange}
-              onLikePostChange={handleLikePostChange}
+              handleLikePost={handleLikePost}
+              handleSavePost={handleSavePost}
               isProfile={isOwnProfile}
             />
           ))
@@ -458,11 +531,9 @@ export default function UserPage({ params }) {
                 post={post}
                 author={user}
                 savedPosts={savedPosts}
-                setSavedPosts={setSavedPosts}
                 likedPosts={likedPosts}
-                setLikedPosts={setLikedPosts}
-                onSavePostChange={handleSavePostChange}
-                onLikePostChange={handleLikePostChange}
+                handleLikePost={handleLikePost}
+                handleSavePost={handleSavePost}
                 isProfile={isOwnProfile}
               />
             ))

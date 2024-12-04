@@ -109,6 +109,7 @@ const New = () => {
         likes: 0,
         comments: [],
         isDraft, // Adiciona a propriedade isDraft
+        type: "post",
       };
 
       await setDoc(doc(postRef, postId), newPost);
@@ -153,7 +154,12 @@ const New = () => {
       <h1>Nova postagem</h1>
       <div className="alert">
         <p>Olá, escritor(a) 👋!</p>
-        <p>Para manter nossa comunidade organizada 🗃️ e com conteúdos relevantes, faça questão de ler o <a href='/code-of-conduct'>Código de Conduta</a> 📄 e o <a href='/u/dimitri.pusch/manual-de-postagem'>Manual de Postagem</a>.</p>
+        <p>
+          Para manter nossa comunidade organizada 🗃️ e com conteúdos relevantes,
+          faça questão de ler o <a href="/code-of-conduct">Código de Conduta</a>{" "}
+          📄 e o{" "}
+          <a href="/u/dimitri.pusch/manual-de-postagem">Manual de Postagem</a>.
+        </p>
         <p>Obrigado e boa postagem!</p>
       </div>
       <section className="form">

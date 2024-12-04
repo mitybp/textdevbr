@@ -9,23 +9,25 @@ import {
   SignIn,
   SignOut,
   Sun,
-  User
+  User,
 } from "@phosphor-icons/react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import Cookies from "js-cookie";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Toaster } from "react-hot-toast";
-
-import Link from "next/link";
 
 export default function Layout({ children }) {
   const [theme, setTheme] = useState("light");
   const [user, setUser] = useState(null);
   const menuRef = useRef(null);
   const router = useRouter();
+  const [newActivity, setNewActivity] = useState(
+    JSON.parse(localStorage.getItem("newActivity"))
+  );
 
   useEffect(() => {
     // Handle theme from cookies
@@ -33,6 +35,8 @@ export default function Layout({ children }) {
     const initialTheme = savedTheme || "light";
     setTheme(initialTheme);
     document.body.classList.add(initialTheme);
+
+    setNewActivity(JSON.parse(localStorage.getItem("newActivity")) || false);
 
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
@@ -89,7 +93,7 @@ export default function Layout({ children }) {
               <hr className="y" />
               <Link
                 href="/activity"
-                className="btn icon"
+                className={`btn icon ${newActivity ? "dot" : ""}`}
                 title="Minha atividade"
               >
                 <Pulse />

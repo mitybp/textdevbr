@@ -13,7 +13,7 @@ import { forwardRef, useState } from "react";
 import toast from "react-hot-toast";
 import { QRCodeCanvas } from "qrcode.react";
 
-const ShareMenu = forwardRef(({ text, path, side, inside=false }, ref) => {
+const ShareMenu = forwardRef(({ text, path, side = "right" }, ref) => {
   const [isQRModalOpen, setQRModalOpen] = useState(false);
   let link = "https://text.dev.br/" + path;
 
@@ -57,11 +57,11 @@ const ShareMenu = forwardRef(({ text, path, side, inside=false }, ref) => {
   return (
     <>
       <details className="md" ref={ref}>
-        <summary className={inside&&"icon-label"}>
-          {inside&&"Compartilhar"}
+        <summary className={side == "inside" ? "icon-label" : undefined}>
+          {side == "inside" ? "Compartilhar" : undefined}
           <PaperPlaneTilt />
         </summary>
-        <div className={side?side:"inside"}>
+        <div className={side}>
           {shareOptions.map(({ name, href, icon }) => (
             <a
               key={name}
