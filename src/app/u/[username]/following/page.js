@@ -88,7 +88,7 @@ const Following = ({ params }) => {
           following.map((user) => (
             <div key={user.uid} className="user-card">
               <Link href={`/u/${user.username}`}>
-                <img src={user.photoURL} alt={`${user.username}'s avatar`} />
+                <img src={user.photoURL||`https://eu.ui-avatars.com/api/?name=${user?.username.replace("-", "+").replace(".", "+").replace("_", "+")}`} alt={`${user.username}'s avatar`} />
                 <span>{user.username}</span>
               </Link>
             </div>

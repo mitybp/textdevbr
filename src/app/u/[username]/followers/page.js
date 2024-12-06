@@ -1,7 +1,14 @@
 "use client";
 
 import { db } from "@/firebase";
-import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -16,7 +23,10 @@ const Followers = ({ params }) => {
     const fetchProfileUid = async () => {
       try {
         // Obtém o UID do usuário com base no username nos parâmetros
-        const userQueryRef = query(collection(db, "users"), where("username", "==", params.username));
+        const userQueryRef = query(
+          collection(db, "users"),
+          where("username", "==", params.username)
+        );
         const userQuerySnap = await getDocs(userQueryRef);
 
         if (userQuerySnap.empty) {
@@ -53,7 +63,7 @@ const Followers = ({ params }) => {
 
         if (!followersList || followersList.length === 0) {
           setFollowers([]);
-          toast.error("Este usuário não possui seguidores.")
+          toast.error("Este usuário não possui seguidores.");
           return;
         }
 
@@ -88,7 +98,13 @@ const Followers = ({ params }) => {
           followers.map((user) => (
             <div key={user.uid} className="user-card">
               <Link href={`/u/${user.username}`}>
-                <img src={user.photoURL} alt={`${user.username}'s avatar`} />
+                <img
+                  src={
+                    user.photoURL ||
+                    `https://eu.ui-avatars.com/api/?name=${user?.username.replace("-", "+").replace(".", "+").replace("_", "+")}`
+                  }
+                  alt={`${user.username}'s avatar`}
+                />
                 <span>{user.username}</span>
               </Link>
             </div>
