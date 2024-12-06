@@ -339,6 +339,16 @@ blockquote p {
   margin: 0;
 }
 
+div.slider{
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  height: 30px;
+  button{
+    flex: 1 0;
+  }
+}
+
 /** SECTIONS */
 section.doc {
   h1 {
@@ -1024,7 +1034,7 @@ details.md {
     color: #fff;
   }
 
-  div {
+  > div {
     position: absolute;
     display: flex;
     flex-direction: column;

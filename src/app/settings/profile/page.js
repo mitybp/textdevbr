@@ -1,5 +1,7 @@
 "use client";
 
+import { uploadFileToGitHub } from "@/(components)/mediaUploader";
+import ProfileImageUpload from "@/(components)/ProfileImageUpload";
 import { auth, db } from "@/firebase";
 import {
   CheckSquare,
@@ -29,12 +31,6 @@ import {
 } from "@phosphor-icons/react";
 import { updateProfile } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import {
-  getDownloadURL,
-  getStorage,
-  ref,
-  uploadBytesResumable,
-} from "firebase/storage";
 import { marked } from "marked";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -77,28 +73,68 @@ const handleSaveProfile = async ({
   }
 };
 
-// Função para upload da imagem de perfil
+// const handleUploadPhoto = async (file, user, setPhotoURL) => {
+//   if (!file || !user) return;
+
+//   try {
+//     // Convertendo o arquivo de imagem para Base64
+//     const reader = new FileReader();
+//     reader.readAsDataURL(file);
+
+//     reader.onload = async () => {
+//       const base64Image = reader.result;
+
+//       // Atualizando o Firestore com o blob da imagem
+//       const userDocRef = doc(db, "users", user.uid);
+//       await updateDoc(userDocRef, { photoBlob: base64Image });
+
+//       // Atualizando o estado local para exibir a imagem
+//       setPhotoURL(base64Image);
+//       toast.success("Imagem de perfil atualizada com sucesso!");
+//     };
+
+//     reader.onerror = () => {
+//       console.error("Erro ao ler o arquivo de imagem.");
+//       toast.error("Erro ao fazer upload da imagem.");
+//     };
+//   } catch (error) {
+//     console.error("Erro ao salvar imagem no Firestore:", error);
+//     toast.error("Erro ao atualizar imagem de perfil.");
+//   }
+// };
+
 const handleUploadPhoto = async (file, user, setPhotoURL) => {
-  if (!file || !user) return;
+  if (!file || !user) {
+    toast.error("Nenhum arquivo ou usuário encontrado.");
+    return;
+  }
 
-  const storage = getStorage();
-  const storageRef = ref(storage, `user_photos/${user.uid}`);
+  try {
+    const photoUrl =
+      (await uploadFileToGitHub(user.uid, file)) ||
+      `https://mitybp.github.io/media-textdevbr/${user.uid}`; // Upload to GitHub
 
-  const uploadTask = uploadBytesResumable(storageRef, file);
-
-  uploadTask.on(
-    "state_changed",
-    null,
-    (error) => {
-      console.error("Erro no upload da imagem:", error);
-      toast.error("Erro ao fazer upload da imagem.");
-    },
-    async () => {
-      const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-      setPhotoURL(downloadURL);
-      toast.success("Imagem de perfil atualizada com sucesso!");
+    if (!photoUrl) {
+      toast.error("Erro ao obter a URL da imagem.");
+      return;
     }
-  );
+
+    setPhotoURL(photoUrl);
+
+    // Atualizando o Firestore com o URL da imagem no GitHub
+    const userDocRef = doc(db, "users", user.uid);
+
+    // Certifique-se de que photoUrl não é undefined
+    if (photoUrl) {
+      await updateDoc(userDocRef, { photoURL: photoUrl });
+      toast.success("Imagem de perfil atualizada com sucesso!");
+    } else {
+      toast.error("URL da imagem não encontrada.");
+    }
+  } catch (error) {
+    console.error("Erro ao fazer upload da imagem:", error);
+    toast.error("Erro ao fazer upload da imagem.");
+  }
 };
 
 export default function ProfileEdit() {
@@ -161,32 +197,8 @@ export default function ProfileEdit() {
       <h1>Editar Perfil</h1>
       <section className="form">
         <h3>Foto de perfil</h3>
-        <div className="profile_img">
-          {photoURL && (
-            <Image
-              src={photoURL}
-              width={120}
-              height={120}
-              quality={100}
-              alt="Foto de perfil"
-              className="profile-img"
-            />
-          )}
-          <div className="profile_img_input">
-            <label htmlFor="photo">
-              Upload
-              <UploadSimple />
-            </label>
-            <input
-              accept="image/*"
-              id="photo"
-              type="file"
-              onChange={(e) =>
-                handleUploadPhoto(e.target.files[0], user, setPhotoURL)
-              }
-            />
-          </div>
-        </div>
+        <ProfileImageUpload user={user} />
+        <small>* Pode demorar até 1 hora para concluir o upload.</small>
 
         <h3>Nome de usuário</h3>
         <div className="input">

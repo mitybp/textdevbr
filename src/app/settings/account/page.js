@@ -16,12 +16,12 @@ export default function ProfileSettings() {
           <Link href="/auth/reset-password" className="btn icon-label">
             Redefinir senha
           </Link>
-          <Link href="/auth/recover-email" className="btn icon-label">
-            Recuperar e-mail
-          </Link>
           <hr/>
-          <Link href="/auth/delete-posts" className="btn icon-label danger active">
+          <Link href="/auth/delete-posts" className="btn icon-label danger">
             Deletar postagens
+          </Link>
+          <Link href="/auth/delete-replies" className="btn icon-label danger">
+            Deletar comentários
           </Link>
           <hr/>
           <Link href="/auth/delete-account" className="btn icon-label danger active">

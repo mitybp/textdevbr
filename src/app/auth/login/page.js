@@ -1,16 +1,17 @@
 "use client";
 
 import { auth, db, googleProvider } from "@/firebase";
-import { Eye, EyeClosed, GoogleLogo } from "@phosphor-icons/react";
+import { Eye, EyeClosed, GithubLogo, GoogleLogo } from "@phosphor-icons/react";
 import {
   createUserWithEmailAndPassword,
+  GithubAuthProvider,
   signInWithEmailAndPassword,
   signInWithPopup,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 export default function Login() {
@@ -22,11 +23,25 @@ export default function Login() {
   const [pwVisible, setPwVisible] = useState(false);
   const router = useRouter();
 
+  useEffect(() => {
+    document.title = "Login - text.dev.br";
+  });
+
   const handleGoogleLogin = () =>
-    authenticateWithProvider(signInWithPopup, googleProvider);
+    authenticateWithProvider(signInWithPopup, googleProvider, "Google");
+  const handleGitHubLogin = () =>
+    authenticateWithProvider(
+      signInWithPopup,
+      new GithubAuthProvider(),
+      "GitHub"
+    );
   const handleEmailLogin = () => authenticateWithEmail(email, password);
 
-  const authenticateWithProvider = async (providerMethod, provider) => {
+  const authenticateWithProvider = async (
+    providerMethod,
+    provider,
+    providerName
+  ) => {
     try {
       setLoading(true);
       const result = await providerMethod(auth, provider);
@@ -38,10 +53,11 @@ export default function Login() {
         await setDoc(doc(db, "users", user.uid), userData);
       }
 
-      toast.success("Login com Google realizado com sucesso!");
+      toast.success(`Login com ${providerName} realizado com sucesso!`);
       router.push(redirect);
     } catch (error) {
-      toast.error("Erro ao fazer login com Google.");
+      toast.error(`Erro ao fazer login com ${providerName}.`);
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -149,14 +165,24 @@ export default function Login() {
   return (
     <section className="form">
       <h1>Login</h1>
-      <button
-        onClick={handleGoogleLogin}
-        disabled={loading}
-        className="icon-label active"
-      >
-        Continuar com Google
-        <GoogleLogo />
-      </button>
+      <div className="buttons half">
+        <button
+          onClick={handleGoogleLogin}
+          disabled={loading}
+          className="icon-label active"
+        >
+          Continuar com Google
+          <GoogleLogo />
+        </button>
+        <button
+          onClick={handleGitHubLogin}
+          disabled={loading}
+          className="icon-label active"
+        >
+          Continuar com GitHub
+          <GithubLogo />
+        </button>
+      </div>
       <hr />
       <div>
         <div className="input">
@@ -188,8 +214,8 @@ export default function Login() {
           Entrar
         </button>
         <div>
-          <Link href="/auth/reset-password/">Esqueceu sua senha?</Link>
-          <Link href="/auth/recover-email/">Esqueceu o email?</Link>
+          <Link href="/auth/signin/">Novo no text.dev.br? Crie sua conta</Link>
+          <Link href="/auth/reset-password/">Recuperar senha</Link>
         </div>
       </div>
     </section>

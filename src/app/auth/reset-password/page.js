@@ -51,7 +51,6 @@ export default function ResetPassword() {
             required
           />
         </div>
-        <Link href="/auth/recover-email">Esqueceu o e-mail?</Link>
       </div>
       <div className="buttons">
         <Link href="/auth/login" className="btn">

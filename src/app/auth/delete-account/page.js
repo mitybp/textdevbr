@@ -56,7 +56,7 @@ export default function DeleteAccount() {
       </p>
       <p>
         Caso queira deixar sua opinião, envie-nos um e-mail:{" "}
-        <Link href="mailto:contact@text.dev.br" type="mail">contact@text.dev.br</Link>
+        <Link href="mailto:contato@text.dev.br" type="mail">contato@text.dev.br</Link>
       </p>
       <div className="buttons">
         <Link href="/" className="btn active">

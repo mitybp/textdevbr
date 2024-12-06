@@ -42,7 +42,7 @@ import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 import Link from "next/link";
-import { formatTimeAgo } from "@/(components)/format";
+import { formatDate, formatTimeAgo } from "@/(components)/format";
 
 export default function UserPage({ params }) {
   const searchParams = useSearchParams();
@@ -126,8 +126,8 @@ export default function UserPage({ params }) {
       setDescription(userDescription);
       setPosts(postsData);
 
-      setUserFollowers(userData.followers.length);
-      setUserFollowing(userData.following.length);
+      setUserFollowers(userData.followers.length || 0);
+      setUserFollowing(userData.following.length || 0);
 
       // Verifica se o usuário logado está seguindo o usuário renderizado
       if (loggedUser && userData.followers.includes(loggedUser.uid)) {
@@ -289,7 +289,7 @@ export default function UserPage({ params }) {
               <Image
                 width={100}
                 height={100}
-                src={user.photoURL}
+                src={`https://mitybp.github.io/media-textdevbr/${user.uid}.png`}
                 alt="Foto do usuário"
                 priority
               />
@@ -318,7 +318,7 @@ export default function UserPage({ params }) {
                 )}
                 <span>
                   <Cake />
-                  {formatTimeAgo(user.joinedAt)}
+                  {formatDate(user.joinedAt)}
                 </span>
               </small>
               <div className="user_header_info_social">

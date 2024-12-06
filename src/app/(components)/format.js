@@ -54,4 +54,12 @@ const formatFullDate = (timestamp) => {
   return `${diaSemana}, ${dia} de ${mes} de ${ano} às ${horas}:${minutos}`;
 };
 
-export { formatFullDate, formatTimeAgo };
+const formatDate = (timestamp) => {
+  const date = timestamp.toDate();
+  const dia = date.getDate().toString().padStart(2, "0");
+  const mes = date.getMonth().toString().padStart(2, "0");
+  const ano = date.getFullYear();
+  return `${dia}/${mes}/${ano}`;
+};
+
+export { formatFullDate, formatTimeAgo, formatDate };

@@ -1,6 +1,7 @@
 "use client";
 import { auth, db } from "@/firebase";
 import {
+  Devices,
   Gear,
   Moon,
   PencilSimple,
@@ -22,6 +23,7 @@ import { Toaster } from "react-hot-toast";
 
 export default function Layout({ children }) {
   const [theme, setTheme] = useState("light");
+  const [cookieTheme, setCookieTheme] = useState("light");
   const [user, setUser] = useState(null);
   const menuRef = useRef(null);
   const router = useRouter();
@@ -31,7 +33,7 @@ export default function Layout({ children }) {
     // Handle theme from cookies
     const savedTheme = Cookies.get("theme");
     const initialTheme = savedTheme || "light";
-    setTheme(initialTheme);
+    setCookieTheme(initialTheme);
     document.body.classList.add(initialTheme);
 
     setNewActivity(JSON.parse(localStorage.getItem("newActivity")) || false);
@@ -63,9 +65,15 @@ export default function Layout({ children }) {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
+  const toggleTheme = (selectedTheme) => {
+    let newTheme = selectedTheme;
+    if (selectedTheme === "system") {
+      newTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+    }
+    setTheme(selectedTheme);
+    setCookieTheme(newTheme);
     Cookies.set("theme", newTheme, { expires: 365 });
     document.body.classList.remove("light", "dark");
     document.body.classList.add(newTheme);
@@ -125,13 +133,33 @@ export default function Layout({ children }) {
                     Configurações <Gear />
                   </Link>
 
-                  <button
+                  {/* <button
                     className="icon-label"
                     onClick={toggleTheme}
                     title={`Tema ${theme === "dark" ? "claro" : "escuro"}`}
                   >
                     Mudar o tema {theme === "dark" ? <Sun /> : <Moon />}
-                  </button>
+                  </button> */}
+                  <div className="slider">
+                    <button
+                      className={`icon ${theme == "system" ? "active" : ""}`}
+                      onClick={() => toggleTheme("system")}
+                    >
+                      <Devices />
+                    </button>
+                    <button
+                      className={`icon ${theme == "light" ? "active" : ""}`}
+                      onClick={() => toggleTheme("light")}
+                    >
+                      <Sun />
+                    </button>
+                    <button
+                      className={`icon ${theme == "dark" ? "active" : ""}`}
+                      onClick={() => toggleTheme("dark")}
+                    >
+                      <Moon />
+                    </button>
+                  </div>
                   <hr />
                   <Link
                     className="btn icon-label danger"

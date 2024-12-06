@@ -17,6 +17,11 @@ const nextConfig = {
         hostname: 'eu.ui-avatars.com',
         port: '',
         pathname: '/**'
+      },{
+        protocol: 'https',
+        hostname: 'mitybp.github.io',
+        port: '',
+        pathname: '/**'
       }
     ],
   },
