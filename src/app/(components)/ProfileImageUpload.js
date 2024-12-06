@@ -19,7 +19,7 @@ async function uploadFileToGitHub(userUid, file) {
       const base64Image = reader.result.split(",")[1]; // Get base64 string without data URL prefix
 
       const remotePath = `${userUid}.png`; // Caminho no repositório
-      const url = `https://api.github.com/repos/mitybp/media-textdevbr/contents/${remotePath}`;
+      const url = `https://api.github.com/repos/textdevbr/media/contents/${remotePath}`;
 
       // Verificar se o arquivo já existe no repositório
       let sha = null;
@@ -50,7 +50,7 @@ async function uploadFileToGitHub(userUid, file) {
       );
 
       // URL pública da imagem no GitHub
-      const publicUrl = `https://mitybp.github.io/media-textdevbr/${remotePath}`;
+      const publicUrl = `https://media.text.dev.br/${remotePath}`;
       return publicUrl;
     };
 
@@ -75,7 +75,7 @@ const handleUploadPhoto = async (file, user, setPhotoURL) => {
     // Fazer o upload da imagem no GitHub
     const photoUrl =
       (await uploadFileToGitHub(user.uid, file)) ||
-      `https://mitybp.github.io/media-textdevbr/${user.uid}`;
+      `https://media.text.dev.br/${user.uid}`;
 
     if (!photoUrl) {
       toast.error("Erro ao obter a URL da imagem.");
@@ -108,7 +108,9 @@ const ProfileImageUpload = ({ user }) => {
     <div className="profile_img">
       <Image
         src={
-          photoURL || `https://mitybp.github.io/media-textdevbr/${user?.uid}.png`
+          photoURL ||
+          `https://media.text.dev.br/${user?.uid}.png` ||
+          `https://eu.ui-avatars.com/api/?name=${user?.username.replace("-", "+").replace(".", "+").replace("_", "+")}`
         }
         width={120}
         height={120}

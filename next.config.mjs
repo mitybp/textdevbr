@@ -19,7 +19,7 @@ const nextConfig = {
         pathname: '/**'
       },{
         protocol: 'https',
-        hostname: 'mitybp.github.io',
+        hostname: 'media.text.dev.br',
         port: '',
         pathname: '/**'
       }

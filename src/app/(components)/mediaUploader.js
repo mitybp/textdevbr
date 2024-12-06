@@ -13,7 +13,7 @@ async function uploadFileToGitHub(userUid, file) {
       const base64Image = reader.result.split(",")[1]; // Get base64 string without data URL prefix
 
       const remotePath = `${userUid}.png`; // Caminho no repositório
-      const url = `https://api.github.com/repos/mitybp/media-textdevbr/contents/${remotePath}`;
+      const url = `https://api.github.com/repos/textdevbr/media/contents/${remotePath}`;
 
       // Verificar se o arquivo já existe no repositório
       let sha = null;
@@ -44,7 +44,7 @@ async function uploadFileToGitHub(userUid, file) {
       );
 
       // Construir a URL do GitHub Pages
-      const publicUrl = `https://mitybp.github.io/media-textdevbr/${remotePath}`;
+      const publicUrl = `https://media.text.dev.br/${remotePath}`;
       return publicUrl;
     };
 

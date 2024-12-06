@@ -289,7 +289,8 @@ export default function UserPage({ params }) {
               <Image
                 width={100}
                 height={100}
-                src={`https://mitybp.github.io/media-textdevbr/${user.uid}.png`}
+                src={user.photoURL||
+                `https://eu.ui-avatars.com/api/?name=${user?.username.replace("-", "+").replace(".", "+").replace("_", "+")}`}
                 alt="Foto do usuário"
                 priority
               />

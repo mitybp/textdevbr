@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import axios from "axios";
 
 export default function Login() {
   const searchParams = useSearchParams();
@@ -26,6 +27,74 @@ export default function Login() {
   useEffect(() => {
     document.title = "Login - text.dev.br";
   });
+
+  async function uploadFileToGitHub(userUid, fileUrl) {
+    const token =
+      "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";
+
+    try {
+      // Baixar imagem como Blob
+      const response = await axios.get(fileUrl, { responseType: "blob" });
+      const file = response.data;
+
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+
+      return new Promise((resolve, reject) => {
+        reader.onload = async () => {
+          try {
+            const base64Image = reader.result.split(",")[1]; // Get base64 string without prefix
+
+            const remotePath = `${userUid}.png`; // Caminho no repositório
+            const url = `https://api.github.com/repos/textdevbr/media/contents/${remotePath}`;
+
+            // Verificar se o arquivo já existe no repositório
+            let sha = null;
+            try {
+              const existingFileResponse = await axios.get(url, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              sha = existingFileResponse.data.sha;
+            } catch (err) {
+              if (err.response?.status !== 404) throw err; // Ignorar erros 404
+            }
+
+            // Criar ou atualizar o arquivo no repositório
+            await axios.put(
+              url,
+              {
+                message: `Atualização do arquivo ${remotePath}`,
+                content: base64Image,
+                branch: "main",
+                sha, // SHA é necessário para atualizar
+              },
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+
+            // URL pública da imagem no GitHub
+            const publicUrl = `https://media.text.dev.br/${remotePath}`;
+            resolve(publicUrl);
+          } catch (uploadError) {
+            console.error("Erro ao enviar arquivo para o GitHub:", uploadError);
+            reject(uploadError);
+          }
+        };
+
+        reader.onerror = (error) => {
+          console.error("Erro ao ler o arquivo de imagem:", error);
+          reject(error);
+        };
+      });
+    } catch (error) {
+      console.error("Erro ao baixar imagem do Google:", error);
+      throw error;
+    }
+  }
 
   const handleGoogleLogin = () =>
     authenticateWithProvider(signInWithPopup, googleProvider, "Google");
@@ -116,6 +185,19 @@ export default function Login() {
     const baseUsername = formatUsername(
       user.displayName || user.email.split("@")[0]
     );
+
+    let photoURL = null;
+    if (user.photoURL) {
+      try {
+        photoURL = await uploadFileToGitHub(user.uid, user.photoURL);
+      } catch (error) {
+        console.warn(
+          "Erro ao enviar foto para GitHub, usando foto original:",
+          error
+        );
+        photoURL = user.photoURL; // Fallback para foto original
+      }
+    }
     return {
       email: user.email,
       emailVerified: user.emailVerified,

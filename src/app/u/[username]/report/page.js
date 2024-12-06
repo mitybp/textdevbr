@@ -100,14 +100,14 @@ const ReportUser = ({ params }) => {
       <section className="form">
         <div className="input">
           {[
-            "Abusive content",
-            "Violation of Community Guidelines",
-            "Violation of privacy",
-            "Fraud or attempted scam",
-            "Hate speech, discrimination or prejudice",
-            "Inappropriate profile information",
-            "User is under 14 years old",
-            "Content not relevant to the community",
+            "Conteúdo abusivo",
+            "Violação do Código de Conduta do Usuário",
+            "Violação da Privacidade",
+            "Fraude ou tentativa de scam",
+            "Discurso de ódio, discriminação ou preconceito",
+            "Informações não apropriadas no perfil",
+            "Usuário menor de 15 anos",
+            "Conteúdo não relevante para a comunidade",
           ].map((reason) => (
             <label
               key={reason}

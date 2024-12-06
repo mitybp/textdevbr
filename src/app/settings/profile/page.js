@@ -112,7 +112,7 @@ const handleUploadPhoto = async (file, user, setPhotoURL) => {
   try {
     const photoUrl =
       (await uploadFileToGitHub(user.uid, file)) ||
-      `https://mitybp.github.io/media-textdevbr/${user.uid}`; // Upload to GitHub
+      `https://media.text.dev.br/${user.uid}`; // Upload to GitHub
 
     if (!photoUrl) {
       toast.error("Erro ao obter a URL da imagem.");
