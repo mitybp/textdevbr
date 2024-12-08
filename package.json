@@ -12,6 +12,7 @@
     "@phosphor-icons/react": "^2.1.7",
     "@uiw/react-md-editor": "^4.0.4",
     "@vercel/blob": "^0.27.0",
+    "@vercel/speed-insights": "^1.1.0",
     "axios": "^1.7.9",
     "firebase": "^10.12.3",
     "firebaseui": "^6.1.0",

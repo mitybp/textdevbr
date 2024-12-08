@@ -12,8 +12,9 @@ import {
   Sun,
   User,
 } from "@phosphor-icons/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, LoadBundleTask } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import Cookies from "js-cookie";
 import Image from "next/image";
 import Link from "next/link";
@@ -42,10 +43,9 @@ function Layout({ children }) {
         setUser(null);
       }
     });
-  
+
     return () => unsubscribe();
   }, []);
-  
 
   useEffect(() => {
     // Close menu when clicking outside
@@ -64,21 +64,22 @@ function Layout({ children }) {
     setCookieTheme(savedTheme);
     document.body.classList.add(savedTheme);
   }, []);
-  
+
   const toggleTheme = (selectedTheme) => {
-    const newTheme = selectedTheme === "system"
-      ? window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light"
-      : selectedTheme;
-  
+    const newTheme =
+      selectedTheme === "system"
+        ? window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light"
+        : selectedTheme;
+
     setTheme(newTheme);
     setCookieTheme(newTheme);
     Cookies.set("theme", newTheme, { expires: 365 });
     document.body.classList.replace("light", newTheme);
     document.body.classList.replace("dark", newTheme);
   };
-  
+
   const ThemeToggleButtonUnlogged = memo(({ currentTheme, toggleTheme }) => (
     <button
       className={`icon ${currentTheme === "dark" ? "active" : ""}`}
@@ -87,13 +88,13 @@ function Layout({ children }) {
       {currentTheme === "dark" ? <Sun /> : <Moon />}
     </button>
   ));
-  
-  ThemeToggleButtonUnlogged.displayName = 'ThemeToggleButtonUnlogged';
-  
+
+  ThemeToggleButtonUnlogged.displayName = "ThemeToggleButtonUnlogged";
 
   return (
     <body className={theme}>
       <Toaster position="top-center" />
+      <SpeedInsights />
       <header>
         <Link href="/" className="brand">
           .dev
