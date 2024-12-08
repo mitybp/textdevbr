@@ -620,7 +620,7 @@ section.user_info {
         }
       }
       .user_footer_links_social {
-        display: flex;
+        display: flex !important;
         align-items: center;
         gap: 4px;
         a {
