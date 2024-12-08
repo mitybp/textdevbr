@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   getAuth,
   confirmPasswordReset,
@@ -15,11 +15,13 @@ import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/firebase";
 import Link from "next/link";
 
-export default function AuthAction({ searchParams }) {
+export default function AuthAction() {
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const mode = searchParams?.mode;
-  const oobCode = searchParams?.oobCode;
+  const mode = searchParams.get("mode");
+  const oobCode = searchParams.get("oobCode");
   const auth = getAuth();
+  const redirect = searchParams.get("redirect") || "/";
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -43,7 +45,7 @@ export default function AuthAction({ searchParams }) {
       await confirmPasswordReset(auth, oobCode, newPassword);
       toast.success("Senha redefinida com sucesso!");
       signOut(auth);
-      router.push("/auth/login");
+      router.push(`/auth/login/?redirect=${redirect}`);
     } catch (error) {
       toast.error(
         "Erro ao redefinir a senha! Verifique o código ou tente novamente."
@@ -64,7 +66,7 @@ export default function AuthAction({ searchParams }) {
       await applyActionCode(auth, oobCode);
       toast.success("Email recuperado com sucesso!");
       signOut(auth);
-      router.push("/auth/login");
+      router.push(`/auth/login/?redirect=${redirect}`);
     } catch (error) {
       toast.error("Erro ao recuperar o email!");
       console.error(error);
@@ -87,8 +89,7 @@ export default function AuthAction({ searchParams }) {
       }
 
       toast.success("Email verificado com sucesso!");
-      signOut(auth);
-      router.push("/auth/login");
+      router.push(redirect);
     } catch (error) {
       toast.error("Erro ao verificar o email!");
       console.error(error);
@@ -218,5 +219,15 @@ export default function AuthAction({ searchParams }) {
     }
   };
 
-  return <Suspense fallback={<p>Carregando...</p>}>{renderForm()}</Suspense>;
+  return (
+    <Suspense
+      fallback={
+        <div className="loader">
+          <span className="object"></span>
+        </div>
+      }
+    >
+      {renderForm()}
+    </Suspense>
+  );
 }

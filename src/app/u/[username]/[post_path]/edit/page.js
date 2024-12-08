@@ -71,19 +71,21 @@ const EditPost = () => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
         let userDoc = await getDoc(doc(db, "users", u.uid));
-        if(userDoc.exists()){
+        if (userDoc.exists()) {
           let userData = userDoc.data();
           setUser(userData);
           localStorage.setItem("user", JSON.stringify(userData));
         }
       } else {
         setUser(null);
-        router.push(`/auth/login?redirect=/u/${username}/${post_path}/edit`)
-        toast.error("Você precisa entrar para editar a postagem!")
+        router.push(`/auth/login?redirect=/u/${username}/${post_path}/edit`);
+        toast.error("Você precisa entrar para editar a postagem!");
       }
     });
 
-    return () => unsubscribe();
+    setInterval(() => {
+      return () => unsubscribe();
+    }, 10000);
   }, [router]);
 
   useEffect(() => {
@@ -123,16 +125,16 @@ const EditPost = () => {
   const handleSubmit = async (isDraft) => {
     if (!user) {
       toast.error("Você precisa fazer login para editar esta postagem!");
-      router.push(`/auth/login/?return=/${username}/${post_path}/edit`);
+      router.push(`/auth/login/?return=/u/${username}/${post_path}/edit`);
       return;
     }
 
-    if(isDraft) {
+    if (isDraft) {
       if (!title) {
         toast.error("Preencha o campo de título!");
         return;
       }
-    }else{
+    } else {
       if (!title || !content) {
         toast.error("Preencha os campos de título e conteúdo!");
         return;
@@ -151,11 +153,15 @@ const EditPost = () => {
         source: source || null,
         date: new Date(),
         isDraft,
-        path: formatUsername(title)
+        path: formatUsername(title),
       });
 
-      toast.success(isDraft?"Rascunho salvo com sucesso!":"Postagem atualizada com sucesso!");
-      router.push(`/${username}/${formatUsername(title)}`);
+      toast.success(
+        isDraft
+          ? "Rascunho salvo com sucesso!"
+          : "Postagem atualizada com sucesso!"
+      );
+      router.push(`/u/${username}/${formatUsername(title)}`);
     } catch (error) {
       console.error("Erro ao atualizar a postagem:", error);
       toast.error("Erro ao atualizar a postagem.");
@@ -164,11 +170,45 @@ const EditPost = () => {
 
   const handleDelete = async () => {
     try {
-      await deleteDoc(doc(db, "posts", post.id));
-      toast.success("Postagem excluída com sucesso!");
-      router.push("/");
+      if (post.type === "post") {
+        // Se for uma postagem, delete todos os comentários relacionados a essa postagem.
+        const repliesQuery = query(
+          collection(db, "replies"),
+          where("parent", "==", ["post", post.id])
+        );
+        const repliesSnapshot = await getDocs(repliesQuery);
+
+        // Excluir todos os comentários relacionados
+        const deleteRepliesPromises = repliesSnapshot.docs.map((replyDoc) =>
+          deleteDoc(replyDoc.ref)
+        );
+        await Promise.all(deleteRepliesPromises);
+
+        // Deletar a postagem após excluir os comentários
+        await deleteDoc(doc(db, "posts", post.id));
+        toast.success("Postagem e comentários excluídos com sucesso!");
+      } else if (post.type === "comment") {
+        // Se for um comentário, apenas remova o ID do comentário do array de replies
+        const parentPostRef = doc(db, "posts", post.parent[1]);
+        const parentPostDoc = await getDoc(parentPostRef);
+
+        if (parentPostDoc.exists()) {
+          const parentPostData = parentPostDoc.data();
+          const updatedReplies = parentPostData.replies.filter(
+            (replyId) => replyId !== post.id
+          );
+
+          // Atualize a postagem com a lista de replies modificada
+          await updateDoc(parentPostRef, {
+            replies: updatedReplies,
+          });
+          toast.success("Comentário excluído com sucesso!");
+        }
+      }
+      router.push(`/u/${username}/${post_path}`);
     } catch (err) {
       console.error(err);
+      toast.error("Erro ao excluir a postagem ou comentário.");
     }
   };
 
@@ -232,20 +272,26 @@ const EditPost = () => {
     },
   });
 
-  if (!post) return <div>Carregando...</div>;
+  if (!post) {
+    return (
+      <div className="loader">
+        <span className="object"></span>
+      </div>
+    );
+  }
 
   return (
     <>
       <h1>Editar postagem</h1>
       <div className="alert">
-        <small>
-          Para manter nossa comunidade organizada, com conteúdos relevantes e
-          interessantes para todos, faça questão de{" "}
-          <Link href="/dimitri.pusch/manual-de-postagem/">
-            ler esta postagem antes
-          </Link>
-          .
-        </small>
+        <p>Olá, escritor(a) 👋!</p>
+        <p>
+          Para manter nossa comunidade organizada 🗃️ e com conteúdos relevantes,
+          faça questão de ler o <a href="/code-of-conduct">Código de Conduta</a>{" "}
+          📄 e o{" "}
+          <a href="/u/dimitri.pusch/manual-de-postagem">Manual de Postagem</a>.
+        </p>
+        <p>Obrigado e boa postagem!</p>
       </div>
       <section className="form">
         <div className="input">
@@ -480,12 +526,11 @@ const EditPost = () => {
         <hr />
         <button className="icon-label danger" onClick={() => handleDelete()}>
           Deletar
-          <Trash/>
+          <Trash />
         </button>
       </section>
     </>
   );
 };
-
 
 export default EditPost;

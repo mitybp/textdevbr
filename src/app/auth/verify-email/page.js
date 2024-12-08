@@ -44,7 +44,7 @@ export default function VerifyEmailComponent() {
           onClick={handleSendVerificationEmail}
           disabled={loading}
         >
-          {loading ? "Enviando..." : "Enviar e-mail de Verificação"}
+          {loading ? "Enviando..." : "Enviar e-mail de verificação"}
         </button>
       </div>
     </section>

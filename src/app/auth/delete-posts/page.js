@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { auth, db } from "@/firebase";
-import { collection, deleteDoc, getDocs, query, where } from "firebase/firestore";
+import { collection, deleteDoc, getDocs, query, where, doc } from "firebase/firestore";
 import toast from "react-hot-toast";
 import Link from "next/link";
 
@@ -20,7 +20,7 @@ export default function DeletePosts() {
         setUser(currentUser);
       } else {
         toast.error("Você precisa fazer login para deletar suas postagens!");
-        router.push("/auth/login");
+        router.push("/auth/login/?redirect=/auth/delete-posts");
       }
     });
 
@@ -38,16 +38,29 @@ export default function DeletePosts() {
     try {
       const postsQuery = query(
         collection(db, "posts"),
-        where("author", "==", user.uid)
+        where("author", "==", user.uid),
+        where("type", "==", "post")
       );
       const postsSnapshot = await getDocs(postsQuery);
       const postsLength = postsSnapshot.docs.length;
 
       if (postsLength > 0) {
+        // Deletar postagens e seus comentários
         await Promise.all(
-          postsSnapshot.docs.map((post) => deleteDoc(post.ref))
+          postsSnapshot.docs.map(async (post) => {
+            // Deletar os comentários relacionados
+            const replies = post.data().replies || [];
+            const deleteReplies = replies.map(async (replyId) => {
+              const replyRef = doc(db, "posts", replyId);
+              await deleteDoc(replyRef);
+            });
+
+            // Deletar a postagem
+            await deleteDoc(post.ref);
+            await Promise.all(deleteReplies);
+          })
         );
-        toast.success(`${postsLength} postagens deletadas com sucesso!`);
+        toast.success(`${postsLength} postagens e seus comentários deletados com sucesso!`);
       } else {
         toast.error("Nenhuma postagem encontrada para deletar.");
       }

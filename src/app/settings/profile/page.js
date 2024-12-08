@@ -73,70 +73,6 @@ const handleSaveProfile = async ({
   }
 };
 
-// const handleUploadPhoto = async (file, user, setPhotoURL) => {
-//   if (!file || !user) return;
-
-//   try {
-//     // Convertendo o arquivo de imagem para Base64
-//     const reader = new FileReader();
-//     reader.readAsDataURL(file);
-
-//     reader.onload = async () => {
-//       const base64Image = reader.result;
-
-//       // Atualizando o Firestore com o blob da imagem
-//       const userDocRef = doc(db, "users", user.uid);
-//       await updateDoc(userDocRef, { photoBlob: base64Image });
-
-//       // Atualizando o estado local para exibir a imagem
-//       setPhotoURL(base64Image);
-//       toast.success("Imagem de perfil atualizada com sucesso!");
-//     };
-
-//     reader.onerror = () => {
-//       console.error("Erro ao ler o arquivo de imagem.");
-//       toast.error("Erro ao fazer upload da imagem.");
-//     };
-//   } catch (error) {
-//     console.error("Erro ao salvar imagem no Firestore:", error);
-//     toast.error("Erro ao atualizar imagem de perfil.");
-//   }
-// };
-
-const handleUploadPhoto = async (file, user, setPhotoURL) => {
-  if (!file || !user) {
-    toast.error("Nenhum arquivo ou usuário encontrado.");
-    return;
-  }
-
-  try {
-    const photoUrl =
-      (await uploadFileToGitHub(user.uid, file)) ||
-      `https://media.text.dev.br/${user.uid}`; // Upload to GitHub
-
-    if (!photoUrl) {
-      toast.error("Erro ao obter a URL da imagem.");
-      return;
-    }
-
-    setPhotoURL(photoUrl);
-
-    // Atualizando o Firestore com o URL da imagem no GitHub
-    const userDocRef = doc(db, "users", user.uid);
-
-    // Certifique-se de que photoUrl não é undefined
-    if (photoUrl) {
-      await updateDoc(userDocRef, { photoURL: photoUrl });
-      toast.success("Imagem de perfil atualizada com sucesso!");
-    } else {
-      toast.error("URL da imagem não encontrada.");
-    }
-  } catch (error) {
-    console.error("Erro ao fazer upload da imagem:", error);
-    toast.error("Erro ao fazer upload da imagem.");
-  }
-};
-
 export default function ProfileEdit() {
   const router = useRouter();
   const headingRef = useRef(null);
@@ -152,6 +88,7 @@ export default function ProfileEdit() {
     facebook: "",
     twitter: "",
     threads: "",
+    linkedin: "",
   });
   const [tabIsPreview, setTabIsPreview] = useState(false);
 
@@ -427,11 +364,13 @@ export default function ProfileEdit() {
               <input
                 type="text"
                 id={s.name.toLowerCase()}
-                value={social[s.name.toLowerCase()]}
-                onChange={(e) => {
-                  social[s.name.toLowerCase()] = e.target.value;
-                  setSocial(social);
-                }}
+                value={social[s.name.toLowerCase()] || ""}
+                onChange={(e) =>
+                  setSocial({
+                    ...social,
+                    [s.name.toLowerCase()]: e.target.value,
+                  })
+                }
                 placeholder={s.name}
               />
             </div>

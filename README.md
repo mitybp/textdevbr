@@ -1,36 +1,11 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+Sunt labore aliqua non consequat quis deserunt exercitation aliquip incididunt dolor. Velit irure culpa laboris consequat pariatur culpa sunt adipisicing in velit nisi duis non enim. Occaecat quis nisi culpa ut aliquip duis exercitation consectetur. Incididunt nulla tempor aute amet fugiat qui occaecat enim laborum dolore. Enim consectetur sunt sit voluptate eiusmod consequat ad amet irure Lorem.
 
-## Getting Started
+Deserunt duis sunt cillum velit quis. Consectetur proident tempor voluptate dolor culpa culpa. Occaecat consectetur commodo sit ut culpa elit ut fugiat. Commodo cillum minim velit culpa eiusmod id culpa. Pariatur id laborum amet in veniam excepteur id et ullamco. Veniam adipisicing laboris reprehenderit veniam in nisi.
 
-First, run the development server:
+Non irure eiusmod minim et incididunt occaecat sit. Aute irure consequat aute adipisicing tempor in labore ad cillum laborum nisi. Nulla sit exercitation culpa ipsum. Pariatur magna voluptate mollit incididunt proident mollit non occaecat cupidatat. Voluptate eiusmod consectetur eiusmod ullamco in ad ad. Fugiat nostrud pariatur incididunt duis non officia ut non consequat dolore ad.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Id adipisicing ea aute voluptate cupidatat minim consequat ad ut sit dolore tempor. Anim proident elit et laboris irure proident fugiat voluptate in elit excepteur id. In cillum do et qui amet velit aliqua et sit ad eiusmod eiusmod. Nulla exercitation esse culpa et sit qui dolore nostrud. Pariatur occaecat et laboris laborum officia ipsum officia ex eu adipisicing. Veniam labore dolor ipsum duis nisi consequat magna.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Nisi non irure aliquip nisi et non qui consequat amet mollit culpa. Cillum eu nostrud ex veniam ea qui. Id nostrud et cupidatat dolore adipisicing non adipisicing et elit voluptate. Eiusmod velit laborum reprehenderit labore. Cupidatat anim do reprehenderit anim dolore. Deserunt mollit adipisicing voluptate eiusmod duis ad.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Nostrud non irure labore aliqua pariatur adipisicing irure proident laborum voluptate laborum culpa ut excepteur. In nisi quis qui pariatur fugiat labore occaecat. Ad commodo est non minim officia dolore amet non nulla nulla est. Exercitation labore ea mollit quis magna culpa officia ea aute.

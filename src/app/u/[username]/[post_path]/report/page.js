@@ -8,8 +8,6 @@ import {
   getDoc,
   getDocs,
   query,
-  setDoc,
-  Timestamp,
   where,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -41,12 +39,16 @@ const ReportPost = ({ params }) => {
       }
     });
 
-    return () => unsubscribe();
+    setInterval(() => {
+      return () => unsubscribe();
+    }, 10000);
   }, [router, user]);
 
   const toggleReason = (reason) => {
     setReasons((prev) =>
-      prev.includes(reason) ? prev.filter((r) => r !== reason) : [...prev, reason]
+      prev.includes(reason)
+        ? prev.filter((r) => r !== reason)
+        : [...prev, reason]
     );
   };
 
@@ -99,15 +101,6 @@ const ReportPost = ({ params }) => {
       console.error(error);
       toast.error("Ocorreu um erro ao enviar a denúncia. Tente novamente.");
     }
-  };
-
-  const formatUsername = (name) => {
-    return name
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/\s+/g, "-")
-      .toLowerCase()
-      .replace(/[!?°,°#]/g, "");
   };
 
   return (

@@ -1,5 +1,4 @@
 import {
-  CopySimple,
   EnvelopeSimple,
   Link,
   PaperPlaneTilt,
@@ -7,14 +6,14 @@ import {
   ThreadsLogo,
   TwitterLogo,
   WhatsappLogo,
-  X,
+  X
 } from "@phosphor-icons/react";
+import { QRCodeSVG } from "qrcode.react";
 import { forwardRef, useState } from "react";
 import toast from "react-hot-toast";
-import { QRCodeCanvas } from "qrcode.react";
 
 const ShareMenu = forwardRef(({ text, path, side = "right" }, ref) => {
-  const [isQRModalOpen, setQRModalOpen] = useState(false);
+  const [modal, setModal] = useState(false);
   let link = "https://text.dev.br/" + path;
 
   const shareOptions = [
@@ -50,18 +49,43 @@ const ShareMenu = forwardRef(({ text, path, side = "right" }, ref) => {
     const link = qrCanvas.toDataURL("image/png");
     const downloadLink = document.createElement("a");
     downloadLink.href = link;
-    downloadLink.download = "QRCode.png";
+    downloadLink.download = "qrcode.png";
     downloadLink.click();
   };
 
   return (
     <>
+      {modal && (
+        <div className="modal">
+          <div className="modal_container">
+            <div className="modal_header">
+              <h3>QR Code</h3>
+              <button className="icon" onClick={() => setModal(false)}>
+                <X />
+              </button>
+            </div>
+            <div className="modal_content">
+              <QRCodeSVG id="qr-code-canvas" value={link} size={380}/>
+              <div className="buttons">
+                <button onClick={()=>setModal(false)}>Cancelar</button>
+                <button onClick={()=>handleQRCodeDownload()} className="active">
+                  Baixar QR Code
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <details className="md" ref={ref}>
         <summary className={side == "inside" ? "icon-label" : undefined}>
           {side == "inside" ? "Compartilhar" : undefined}
           <PaperPlaneTilt />
         </summary>
         <div className={side}>
+          <button className="icon-label" onClick={handleCopyLink}>
+            Copiar link <Link />
+          </button>
+          <hr/>
           {shareOptions.map(({ name, href, icon }) => (
             <a
               key={name}
@@ -73,22 +97,19 @@ const ShareMenu = forwardRef(({ text, path, side = "right" }, ref) => {
               {name} {icon}
             </a>
           ))}
-          <button className="icon-label" onClick={handleCopyLink}>
-            Copiar link <Link />
-          </button>
-          {/* <button
+          <button
             className="icon-label"
             onClick={() => {
-              setQRModalOpen(true);
+              setModal(true);
               ref.current.open = false;
             }}
           >
             QR code <QrCode />
-          </button> */}
+          </button>
         </div>
       </details>
 
-      {isQRModalOpen && (
+      {/* {isQRModalOpen && (
         <div className="qr-modal">
           <div className="qr-modal-content">
             <QRCodeCanvas id="qr-code-canvas" value={link} size={300} />
@@ -100,7 +121,7 @@ const ShareMenu = forwardRef(({ text, path, side = "right" }, ref) => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </>
   );
 });

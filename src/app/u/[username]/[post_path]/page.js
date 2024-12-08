@@ -1,18 +1,30 @@
 "use client";
+import { formatFullDate, formatTimeAgo } from "@/(components)/format";
 import ReplyCard from "@/(components)/ReplyCard";
 import ShareMenu from "@/(components)/ShareMenu";
 import { auth, db } from "@/firebase";
 import {
   BookmarkSimple,
-  ChatTeardrop,
+  BracketsCurly,
+  CheckSquare,
+  Code,
   DotsThreeVertical,
+  Eye,
   Heart,
+  Link,
+  ListBullets,
+  ListNumbers,
   PencilSimple,
+  Quotes,
+  TextB,
+  TextItalic,
+  TextStrikethrough,
   Warning,
+  X,
 } from "@phosphor-icons/react";
 import { onAuthStateChanged } from "firebase/auth";
+
 import {
-  arrayRemove,
   arrayUnion,
   collection,
   doc,
@@ -20,6 +32,7 @@ import {
   getDocs,
   increment,
   query,
+  setDoc,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -27,12 +40,10 @@ import { marked } from "marked";
 import markedAlert from "marked-alert";
 import { baseUrl } from "marked-base-url";
 import customHeadingId from "marked-custom-heading-id";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 const extendedTables = require("marked-extended-tables");
-import { formatTimeAgo, formatFullDate } from "@/(components)/format";
 
 const PostPage = ({ params }) => {
   const { username, post_path } = params;
@@ -45,6 +56,9 @@ const PostPage = ({ params }) => {
   const [likes, setLikes] = useState(0);
   const [savedPosts, setSavedPosts] = useState(new Set());
   const [parentData, setParentData] = useState(null);
+  const [modal, setModal] = useState(false);
+  const [replyContent, setReplyContent] = useState("");
+  const [tabIsPreview, setTabIsPreview] = useState(false);
 
   const menuRef = useRef(null);
   const shareRef = useRef(null);
@@ -80,7 +94,9 @@ const PostPage = ({ params }) => {
       }
     });
 
-    return () => unsubscribe();
+    setInterval(() => {
+      return () => unsubscribe();
+    }, 10000);
   }, [router]);
 
   useEffect(() => {
@@ -147,21 +163,24 @@ const PostPage = ({ params }) => {
         setContent(mdContent);
 
         if (postData.type == "post") {
-          const resolvedReplies = await Promise.all(
-            postData.replies.map(async (reply) => {
-              const replyRef = doc(db, "posts", reply);
-              const replySnap = await getDoc(replyRef);
-              const replyData = replySnap.data();
+          const resolvedReplies =
+            postData && postData.replies.length > 0
+              ? await Promise.all(
+                  postData?.replies.map(async (reply) => {
+                    const replyRef = doc(db, "posts", reply);
+                    const replySnap = await getDoc(replyRef);
+                    const replyData = replySnap.data();
 
-              const replyAuthorRef = doc(db, "users", replyData.author);
-              const replyAuthorSnap = await getDoc(replyAuthorRef);
-              return {
-                ...replyData,
-                author: { username: replyAuthorSnap.data().username },
-                id: replySnap.id,
-              };
-            })
-          );
+                    const replyAuthorRef = doc(db, "users", replyData?.author);
+                    const replyAuthorSnap = await getDoc(replyAuthorRef);
+                    return {
+                      ...replyData,
+                      author: { username: replyAuthorSnap.data().username },
+                      id: replySnap.id,
+                    };
+                  })
+                )
+              : [];
           setPostReplies(resolvedReplies);
         } else {
           const parentSnap = await getDoc(doc(db, "posts", postData.parentId));
@@ -189,19 +208,19 @@ const PostPage = ({ params }) => {
         toast.error("Você precisa estar logado para curtir postagens!");
         return;
       }
-  
+
       const userDocRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userDocRef);
       const postDocRef = doc(db, "posts", postId);
-  
+
       if (!userDoc.exists()) {
         toast.error("Usuário não encontrado!");
         return;
       }
-  
+
       const userData = userDoc.data();
       const likedPosts = new Set(userData.likedPosts || []);
-  
+
       if (likedPosts.has(postId)) {
         likedPosts.delete(postId);
         await updateDoc(postDocRef, {
@@ -218,10 +237,10 @@ const PostPage = ({ params }) => {
         localStorage.setItem("newActivity", true);
         toast.success("Postagem curtida!");
       }
-  
+
       // Atualiza o Firestore
       await updateDoc(userDocRef, { likedPosts: Array.from(likedPosts) });
-  
+
       // Atualiza o estado local
       setLikedPosts(likedPosts);
     } catch (error) {
@@ -229,7 +248,6 @@ const PostPage = ({ params }) => {
       toast.error("Erro ao curtir postagem!");
     }
   };
-  
 
   const handleSavePost = async (postId) => {
     try {
@@ -270,10 +288,58 @@ const PostPage = ({ params }) => {
     }
   };
 
+  const handleSubmitReply = async () => {
+    if (!user) {
+      toast.error("Você precisa fazer login para comentar!");
+      router.push(
+        `/auth/login/?return=/u/${params.username}/${params.post_path}`
+      );
+      return;
+    }
+    if (!replyContent) {
+      toast.error("Escreva algo para comentar!");
+      return;
+    }
+    try {
+      const replyRef = collection(db, "posts");
+      const replyId = doc(replyRef).id;
+
+      const newReply = {
+        content: replyContent,
+        date: new Date(),
+        path: replyId,
+        id: replyId,
+        likes: 0,
+        type: "reply",
+        author: user.uid,
+        parentId: postData.id,
+      };
+      await setDoc(doc(replyRef, replyId), newReply);
+      await updateDoc(doc(db, "posts", postData.id), {
+        replies: arrayUnion(replyId),
+      });
+
+      setModal(false);
+      toast.success("Comentário enviado com sucesso!");
+      router.refresh();
+    } catch (err) {
+      console.error("Erro ao salvar comentário:", err);
+      toast.error("Erro ao enviar comentário!");
+    }
+  };
+
   if (!postData || !authorData) {
-    return <div>Carregando...</div>;
+    return (
+      <div className="loader">
+        <span className="object"></span>
+      </div>
+    );
   } else if (postData.type == "post" && !postReplies) {
-    return <div>Carregando...</div>;
+    return (
+      <div className="loader">
+        <span className="object"></span>
+      </div>
+    );
   }
 
   if (
@@ -285,6 +351,154 @@ const PostPage = ({ params }) => {
   const isOwnProfile = user && username === user.username;
   return (
     <>
+      {modal && (
+        <div className="modal">
+          <div className="modal_container reply">
+            <div className="modal_header">
+              <h3>Escrever um comentário</h3>
+              <button className="icon" onClick={() => setModal(false)}>
+                <X />
+              </button>
+            </div>
+            <div className="modal_content">
+              <div className="content_input_styles_textarea">
+                <div className="content_input_styles">
+                  <div className="content_input_styles_buttons">
+                    <button
+                      className="icon"
+                      onClick={() =>
+                        setReplyContent(replyContent + "**texto** ")
+                      }
+                      title="Negrito"
+                    >
+                      <TextB />
+                    </button>
+                    <button
+                      className="icon"
+                      onClick={() => setReplyContent(replyContent + "*texto* ")}
+                      title="Itálico"
+                    >
+                      <TextItalic />
+                    </button>
+                    <button
+                      className="icon"
+                      onClick={() =>
+                        setReplyContent(replyContent + "~~texto~~ ")
+                      }
+                      title="Tachado"
+                    >
+                      <TextStrikethrough />
+                    </button>
+                    <button
+                      className="icon"
+                      onClick={() => setReplyContent(replyContent + "\n> ")}
+                      title="Citação"
+                    >
+                      <Quotes />
+                    </button>
+                    <button
+                      className="icon"
+                      onClick={() =>
+                        setReplyContent(
+                          replyContent + "[texto exibido](https://text.dev.br/)"
+                        )
+                      }
+                      title="Link"
+                    >
+                      <Link />
+                    </button>
+                    <button
+                      className="icon"
+                      onClick={() => setReplyContent(replyContent + "``")}
+                      title="Código em linha"
+                    >
+                      <Code />
+                    </button>
+                    <button
+                      className="icon"
+                      onClick={() =>
+                        setReplyContent(replyContent + "\n```js\n```")
+                      }
+                      title="Código em bloco"
+                    >
+                      <BracketsCurly />
+                    </button>
+                    <button
+                      className="icon"
+                      onClick={() =>
+                        setReplyContent(
+                          replyContent + "\n- item 1\n- item 2\n- item 3"
+                        )
+                      }
+                      title="Lista não ordenada"
+                    >
+                      <ListBullets />
+                    </button>
+                    <button
+                      className="icon"
+                      onClick={() =>
+                        setReplyContent(
+                          replyContent + "\n1. item 1\n2. item 2\n3. item 3"
+                        )
+                      }
+                      title="Lista ordenada"
+                    >
+                      <ListNumbers />
+                    </button>
+                    <button
+                      className="icon"
+                      onClick={() =>
+                        setReplyContent(
+                          replyContent + "\n- [ ] item\n- [x] item"
+                        )
+                      }
+                      title="Caixa de seleção"
+                    >
+                      <CheckSquare />
+                    </button>
+                  </div>
+                  <div className="content_input_styles_slider">
+                    <button
+                      className={`icon ${!tabIsPreview && "active"}`}
+                      onClick={() => setTabIsPreview(false)}
+                    >
+                      <PencilSimple />
+                    </button>
+                    <button
+                      className={`icon ${tabIsPreview && "active"}`}
+                      onClick={() => setTabIsPreview(true)}
+                    >
+                      <Eye />
+                    </button>
+                  </div>
+                </div>
+                {tabIsPreview ? (
+                  <div
+                    className="preview"
+                    dangerouslySetInnerHTML={{
+                      __html: marked.parse(replyContent),
+                    }}
+                  ></div>
+                ) : (
+                  <textarea
+                    id="content"
+                    value={replyContent}
+                    onChange={(e) => setReplyContent(e.target.value)}
+                    placeholder="Conteúdo"
+                    minLength={800}
+                  ></textarea>
+                )}
+              </div>
+              <div className="buttons">
+                <button onClick={() => setModal(false)}>Cancelar</button>
+                <button className="active" onClick={() => handleSubmitReply()}>
+                  Publicar comentário
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <section className="post_info">
         <div className="post_header">
           <div className="post_header_info">
@@ -302,9 +516,7 @@ const PostPage = ({ params }) => {
               </small>
             )}
             <small>
-              <Link href={`/u/${authorData.username}`}>
-                {authorData.username}
-              </Link>
+              <a href={`/u/${authorData.username}`}>{authorData.username}</a>
               <span>{"•"}</span>
               <span
                 className="tooltip"
@@ -408,7 +620,10 @@ const PostPage = ({ params }) => {
           <section className="replies">
             <div className="reply_header">
               <h3>Comentários</h3>
-              <button className="icon-label active">
+              <button
+                className="icon-label active"
+                onClick={() => setModal(true)}
+              >
                 Escrever <PencilSimple />
               </button>
             </div>

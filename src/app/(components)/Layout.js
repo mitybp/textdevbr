@@ -51,7 +51,9 @@ export default function Layout({ children }) {
       }
     });
 
-    return () => unsubscribe();
+    setInterval(() => {
+      return () => unsubscribe();
+    }, 10000);
   }, [user]);
 
   useEffect(() => {
@@ -121,25 +123,26 @@ export default function Layout({ children }) {
                   <Link
                     href={`/u/${user.username}`}
                     className="btn icon-label active"
+                    onClick={() => menuRef.current.removeAttribute("open")}
                   >
                     Meu perfil <User />
                   </Link>
                   <hr />
-                  <Link href="/settings/profile" className="btn icon-label">
+                  <Link
+                    href="/settings/profile"
+                    className="btn icon-label"
+                    onClick={() => menuRef.current.removeAttribute("open")}
+                  >
                     Editar perfil <PencilSimple />
                   </Link>
 
-                  <Link href="/settings/account" className="btn icon-label">
+                  <Link
+                    href="/settings/account"
+                    className="btn icon-label"
+                    onClick={() => menuRef.current.removeAttribute("open")}
+                  >
                     Configurações <Gear />
                   </Link>
-
-                  {/* <button
-                    className="icon-label"
-                    onClick={toggleTheme}
-                    title={`Tema ${theme === "dark" ? "claro" : "escuro"}`}
-                  >
-                    Mudar o tema {theme === "dark" ? <Sun /> : <Moon />}
-                  </button> */}
                   <div className="slider">
                     <button
                       className={`icon ${theme == "system" ? "active" : ""}`}
@@ -165,6 +168,7 @@ export default function Layout({ children }) {
                     className="btn icon-label danger"
                     href="/auth/signout"
                     title="Sair"
+                    onClick={() => menuRef.current.removeAttribute("open")}
                   >
                     Sair <SignOut />
                   </Link>

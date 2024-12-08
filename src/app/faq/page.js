@@ -1,5 +1,6 @@
-"use client"
+"use client";
 
+import { DotsThreeVertical } from "@phosphor-icons/react";
 import { useEffect } from "react";
 
 const FAQ = () => {
@@ -10,7 +11,7 @@ const FAQ = () => {
   return (
     <section className="doc">
       <h1>FAQ</h1>
-      <details>
+      <details open>
         <summary>O que é o text.dev.br?</summary>
         <div>
           O <strong>text.dev.br</strong> é uma plataforma voltada para a
@@ -25,11 +26,13 @@ const FAQ = () => {
         <div>
           Para reportar postagens ou usuários, basta clicar no botão no canto
           superior direito da postagem ou comentário, representado pelo ícone{" "}
-          <code>&lt;DotsThree /&gt;</code>, e selecionar a opção{" "}
-          <strong>Reportar</strong>. Você será solicitado a adicionar o motivo
-          do seu reporte. Após preencher, basta clicar em "Enviar". Sua denúncia
-          será analisada pelos administradores da plataforma, que tomarão as
-          ações necessárias.
+          <button className="icon">
+            <DotsThreeVertical />
+          </button>
+          , e selecionar a opção <strong>Reportar</strong>. Você será solicitado
+          a adicionar o motivo do seu reporte. Após preencher, basta clicar em
+          "Enviar". Sua denúncia será analisada pelos administradores da
+          plataforma, que tomarão as ações necessárias.
         </div>
       </details>
 

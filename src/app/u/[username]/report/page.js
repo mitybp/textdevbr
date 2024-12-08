@@ -37,7 +37,9 @@ const ReportUser = ({ params }) => {
       }
     });
 
-    return () => unsubscribe();
+    setInterval(() => {
+      return () => unsubscribe();
+    }, 10000);;
   }, [router]);
 
   const handleReasonToggle = (reason) => {

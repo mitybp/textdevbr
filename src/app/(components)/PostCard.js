@@ -59,7 +59,7 @@ const PostCard = (props) => {
           {post.isDraft && (
             <>
               {"•"}
-              <span className="alert">Rascunho</span>
+              <span className="warning">Rascunho</span>
             </>
           )}
         </small>

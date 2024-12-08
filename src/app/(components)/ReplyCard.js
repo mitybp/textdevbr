@@ -36,7 +36,6 @@ const ReplyCard = ({
       document.removeEventListener("click", handleClickOutside);
     };
   }, []);
-  console.log(reply.author);
 
   return (
     <div className="reply_card">
@@ -65,7 +64,7 @@ const ReplyCard = ({
         </details>
       </div>
       <div className="reply_card_content">
-        <ChatTeardrop />
+        {inList && <ChatTeardrop />}
         <a
           href={`/u/${reply.author.username}/${reply.id}`}
           className={`reply_card_content_render ${inList ? "italic" : ""}`}

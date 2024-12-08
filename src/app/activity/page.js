@@ -34,7 +34,9 @@ export default function Activity({ searchParams }) {
         router.push("/auth/login");
       }
     });
-    return () => unsubscribe();
+    setInterval(() => {
+      return () => unsubscribe();
+    }, 10000);
   }, [router]);
 
   const fetchUserActivity = async (uid) => {
@@ -109,19 +111,19 @@ export default function Activity({ searchParams }) {
         toast.error("Você precisa estar logado para curtir postagens!");
         return;
       }
-  
+
       const userDocRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userDocRef);
       const postDocRef = doc(db, "posts", postId);
-  
+
       if (!userDoc.exists()) {
         toast.error("Usuário não encontrado!");
         return;
       }
-  
+
       const userData = userDoc.data();
       const likedPosts = new Set(userData.likedPosts || []);
-  
+
       if (likedPosts.has(postId)) {
         likedPosts.delete(postId);
         await updateDoc(postDocRef, {
@@ -136,10 +138,10 @@ export default function Activity({ searchParams }) {
         localStorage.setItem("newActivity", true);
         toast.success("Postagem curtida!");
       }
-  
+
       // Atualiza o Firestore
       await updateDoc(userDocRef, { likedPosts: Array.from(likedPosts) });
-  
+
       // Atualiza o estado local
       setLikedPosts(likedPosts);
     } catch (error) {
@@ -147,7 +149,6 @@ export default function Activity({ searchParams }) {
       toast.error("Erro ao curtir postagem!");
     }
   };
-  
 
   const handleSavePost = async (postId) => {
     try {
@@ -187,7 +188,6 @@ export default function Activity({ searchParams }) {
       toast.error("Erro ao salvar postagem!");
     }
   };
-  
 
   const renderPosts = (postsSet) => {
     const postsArray = Array.from(postsSet);
@@ -228,7 +228,7 @@ export default function Activity({ searchParams }) {
   };
 
   return (
-    <Suspense fallback={<p>Carregando...</p>}>
+    <>
       <h1>Atividade</h1>
       <section className="tabs">
         <button
@@ -246,10 +246,11 @@ export default function Activity({ searchParams }) {
           Salvos <small className="gray">{savedPostIdsSet.size}</small>
         </button>
       </section>
-
       <section className="posts">
         {loading ? (
-          <p>Carregando...</p>
+          <div className="loader">
+            <span className="object"></span>
+          </div>
         ) : (
           <>
             {tab === "liked"
@@ -258,6 +259,6 @@ export default function Activity({ searchParams }) {
           </>
         )}
       </section>
-    </Suspense>
+    </>
   );
 }

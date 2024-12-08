@@ -2,16 +2,16 @@
 
 import { auth, db } from "@/firebase";
 import {
-  Users,
-  Compass,
+  ClockCounterClockwise,
   MagnifyingGlass,
+  Users,
   X,
-  ArrowDown,
 } from "@phosphor-icons/react";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   collection,
   doc,
+  endAt,
   getDoc,
   getDocs,
   limit,
@@ -19,7 +19,6 @@ import {
   query,
   startAfter,
   where,
-  endAt,
 } from "firebase/firestore";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -34,12 +33,12 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [tab, setTab] = useState("explore");
+  const [tab, setTab] = useState("recents");
 
   const observerRef = useRef();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const currentTab = searchParams.get("tab") || "explore";
+  const currentTab = searchParams.get("tab") || "recents";
   const currentSearch = searchParams.get("q") || "";
 
   useEffect(() => {
@@ -113,20 +112,20 @@ export default function Home() {
           limit(10)
         );
       }
-  
+
       const lastPost = posts[posts.length - 1];
       if (lastPost) {
         q = query(q, startAfter(lastPost.date)); // Usa o campo 'date' para paginação
       }
-  
+
       const querySnapshot = await getDocs(q);
       const fetchedPosts = await mapPosts(querySnapshot);
-  
+
       // Filtra para evitar duplicados
       const uniquePosts = fetchedPosts.filter(
         (post) => !posts.some((existing) => existing.id === post.id)
       );
-  
+
       if (uniquePosts.length === 0) setHasMore(false);
       setPosts((prev) => [...prev, ...uniquePosts]);
     } catch (error) {
@@ -136,7 +135,7 @@ export default function Home() {
       setLoading(false);
     }
   };
-  
+
   const fetchFollowingPosts = async (search = "") => {
     if (loading || !hasMore || following.length === 0) return;
     setLoading(true);
@@ -160,20 +159,20 @@ export default function Home() {
           limit(10)
         );
       }
-  
+
       const lastPost = posts[posts.length - 1];
       if (lastPost) {
         q = query(q, startAfter(lastPost.date)); // Usa o campo 'date' para paginação
       }
-  
+
       const querySnapshot = await getDocs(q);
       const fetchedPosts = await mapPosts(querySnapshot);
-  
+
       // Filtra para evitar duplicados
       const uniquePosts = fetchedPosts.filter(
         (post) => !posts.some((existing) => existing.id === post.id)
       );
-  
+
       if (uniquePosts.length === 0) setHasMore(false);
       setPosts((prev) => [...prev, ...uniquePosts]);
     } catch (error) {
@@ -183,7 +182,6 @@ export default function Home() {
       setLoading(false);
     }
   };
-  
 
   const mapPosts = async (querySnapshot) => {
     const tempPosts = [];
@@ -230,13 +228,13 @@ export default function Home() {
       {auth.currentUser && (
         <section className="tabs top">
           <button
-            className={`icon-label ${tab === "explore" && "active"}`}
+            className={`icon-label ${tab === "recents" && "active"}`}
             onClick={() => {
-              setTab("explore");
-              router.push("/?tab=explore");
+              setTab("recents");
+              router.push("/?tab=recents");
             }}
           >
-            <Compass /> Explorar
+            <ClockCounterClockwise /> <span>Recentes</span>
           </button>
           <button
             className={`icon-label ${tab === "following" && "active"}`}
@@ -245,7 +243,7 @@ export default function Home() {
               router.push("/?tab=following");
             }}
           >
-            <Users /> Seguidos
+            <Users /> <span>Seguindo</span>
           </button>
         </section>
       )}
@@ -279,7 +277,11 @@ export default function Home() {
       </div>
 
       <div ref={observerRef} className="loading-indicator">
-        {loading && <div>Carregando...</div>}
+        {loading && (
+          <div className="loader">
+            <span className="object"></span>
+          </div>
+        )}
       </div>
     </>
   );
