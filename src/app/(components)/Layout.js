@@ -21,6 +21,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { memo, useEffect, useRef, useState } from "react";
 import { Toaster } from "react-hot-toast";
+import { Analytics, track } from "@vercel/analytics/react";
 
 function Layout({ children }) {
   const [theme, setTheme] = useState("light");
@@ -95,6 +96,7 @@ function Layout({ children }) {
     <body className={theme}>
       <Toaster position="top-center" />
       <SpeedInsights />
+      <Analytics />
       <header>
         <Link href="/" className="brand">
           .dev
