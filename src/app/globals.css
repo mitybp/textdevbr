@@ -612,7 +612,7 @@ section.user_info {
       justify-content: space-between;
       margin-top: 10px;
       .user_footer_links_users {
-        display: flex;
+        display: flex !important;
         align-items: center;
         gap: 10px;
         button {
