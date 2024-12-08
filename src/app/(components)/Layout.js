@@ -18,7 +18,7 @@ import Cookies from "js-cookie";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Toaster } from "react-hot-toast";
 
 export default function Layout({ children }) {
@@ -30,14 +30,6 @@ export default function Layout({ children }) {
   const [newActivity, setNewActivity] = useState(null);
 
   useEffect(() => {
-    // Handle theme from cookies
-    const savedTheme = Cookies.get("theme");
-    const initialTheme = savedTheme || "light";
-    setCookieTheme(initialTheme);
-    document.body.classList.add(initialTheme);
-
-    setNewActivity(JSON.parse(localStorage.getItem("newActivity")) || false);
-
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
         let userDoc = await getDoc(doc(db, "users", u.uid));
@@ -50,11 +42,10 @@ export default function Layout({ children }) {
         setUser(null);
       }
     });
-
-    setInterval(() => {
-      return () => unsubscribe();
-    }, 10000);
-  }, [user]);
+  
+    return () => unsubscribe();
+  }, []);
+  
 
   useEffect(() => {
     // Close menu when clicking outside
@@ -67,19 +58,36 @@ export default function Layout({ children }) {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const savedTheme = Cookies.get("theme") || "light";
+    setTheme(savedTheme);
+    setCookieTheme(savedTheme);
+    document.body.classList.add(savedTheme);
+  }, []);
+  
   const toggleTheme = (selectedTheme) => {
-    let newTheme = selectedTheme;
-    if (selectedTheme === "system") {
-      newTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+    const newTheme = selectedTheme === "system"
+      ? window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
-        : "light";
-    }
-    setTheme(selectedTheme);
+        : "light"
+      : selectedTheme;
+  
+    setTheme(newTheme);
     setCookieTheme(newTheme);
     Cookies.set("theme", newTheme, { expires: 365 });
-    document.body.classList.remove("light", "dark");
-    document.body.classList.add(newTheme);
+    document.body.classList.replace("light", newTheme);
+    document.body.classList.replace("dark", newTheme);
   };
+  
+  const ThemeToggleButtonUnlogged = memo(({ currentTheme, toggleTheme }) => (
+    <button
+      className={`icon ${currentTheme === "dark" ? "active" : ""}`}
+      onClick={() => toggleTheme(currentTheme === "dark" ? "light" : "dark")}
+    >
+      {currentTheme === "dark" ? <Sun /> : <Moon />}
+    </button>
+  ));
+  
 
   return (
     <body className={theme}>
@@ -186,13 +194,10 @@ export default function Layout({ children }) {
                 <span>Entrar</span>
               </Link>
               <hr className="y" />
-              <button
-                className="icon"
-                onClick={toggleTheme}
-                title={`Tema ${theme === "dark" ? "claro" : "escuro"}`}
-              >
-                {theme === "dark" ? <Sun /> : <Moon />}
-              </button>
+              <ThemeToggleButtonUnlogged
+                currentTheme={theme}
+                toggleTheme={toggleTheme}
+              />
             </>
           )}
         </div>
