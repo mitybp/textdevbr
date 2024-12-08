@@ -88,6 +88,8 @@ function Layout({ children }) {
     </button>
   ));
   
+  ThemeToggleButtonUnlogged.displayName = 'ThemeToggleButtonUnlogged';
+  
 
   return (
     <body className={theme}>
@@ -225,6 +227,5 @@ function Layout({ children }) {
     </body>
   );
 }
-Layout.displayName = 'Layout';
 
 export default Layout;
