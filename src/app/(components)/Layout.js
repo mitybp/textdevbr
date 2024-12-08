@@ -13,7 +13,7 @@ import {
   User,
 } from "@phosphor-icons/react";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, LoadBundleTask } from "firebase/firestore";
 import Cookies from "js-cookie";
 import Image from "next/image";
 import Link from "next/link";
@@ -21,7 +21,7 @@ import { useRouter } from "next/navigation";
 import { memo, useEffect, useRef, useState } from "react";
 import { Toaster } from "react-hot-toast";
 
-export default function Layout({ children }) {
+function Layout({ children }) {
   const [theme, setTheme] = useState("light");
   const [cookieTheme, setCookieTheme] = useState("light");
   const [user, setUser] = useState(null);
@@ -225,3 +225,6 @@ export default function Layout({ children }) {
     </body>
   );
 }
+Layout.displayName = 'Layout';
+
+export default Layout;
