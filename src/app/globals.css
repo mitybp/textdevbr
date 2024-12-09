@@ -1006,6 +1006,10 @@ article {
   p + p {
     margin-top: 10px;
   }
+  ul, ol{
+    margin-left: 40px;
+    margin-block: 10px;
+  }
 }
 
 section.explore {
