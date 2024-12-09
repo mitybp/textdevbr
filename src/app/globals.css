@@ -197,6 +197,12 @@ button {
     }
   }
 
+  &:has(span) span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
   [disabled],
   &:disabled {
     pointer-events: none;
@@ -604,12 +610,13 @@ section.user_info {
       display: flex !important;
       align-items: center;
       gap: 10px;
-      span, button{
+      span,
+      button {
         line-height: 25px;
         display: flex;
         align-items: center;
         gap: 4px;
-        svg{
+        svg {
           vertical-align: middle;
         }
       }
@@ -805,6 +812,12 @@ section.form {
           border-top-right-radius: 0;
           padding: 10px;
           min-height: 30px;
+
+          ul,
+          ol {
+            margin-left: 40px;
+            margin-block: 10px;
+          }
         }
       }
     }
@@ -1006,7 +1019,8 @@ article {
   p + p {
     margin-top: 10px;
   }
-  ul, ol{
+  ul,
+  ol {
     margin-left: 40px;
     margin-block: 10px;
   }
@@ -1395,6 +1409,12 @@ small {
           border-top-right-radius: 0;
           padding: 10px;
           min-height: 30px;
+
+          ul,
+          ol {
+            margin-left: 40px;
+            margin-block: 10px;
+          }
         }
       }
       .buttons {

@@ -1,4 +1,5 @@
 "use client";
+import ContentForm from "@/(components)/ContentForm";
 import { formatFullDate, formatTimeAgo } from "@/(components)/format";
 import ReplyCard from "@/(components)/ReplyCard";
 import ShareMenu from "@/(components)/ShareMenu";
@@ -361,134 +362,13 @@ const PostPage = ({ params }) => {
               </button>
             </div>
             <div className="modal_content">
-              <div className="content_input_styles_textarea">
-                <div className="content_input_styles">
-                  <div className="content_input_styles_buttons">
-                    <button
-                      className="icon"
-                      onClick={() =>
-                        setReplyContent(replyContent + "**texto** ")
-                      }
-                      title="Negrito"
-                    >
-                      <TextB />
-                    </button>
-                    <button
-                      className="icon"
-                      onClick={() => setReplyContent(replyContent + "*texto* ")}
-                      title="Itálico"
-                    >
-                      <TextItalic />
-                    </button>
-                    <button
-                      className="icon"
-                      onClick={() =>
-                        setReplyContent(replyContent + "~~texto~~ ")
-                      }
-                      title="Tachado"
-                    >
-                      <TextStrikethrough />
-                    </button>
-                    <button
-                      className="icon"
-                      onClick={() => setReplyContent(replyContent + "\n> ")}
-                      title="Citação"
-                    >
-                      <Quotes />
-                    </button>
-                    <button
-                      className="icon"
-                      onClick={() =>
-                        setReplyContent(
-                          replyContent + "[texto exibido](https://text.dev.br/)"
-                        )
-                      }
-                      title="Link"
-                    >
-                      <Link />
-                    </button>
-                    <button
-                      className="icon"
-                      onClick={() => setReplyContent(replyContent + "``")}
-                      title="Código em linha"
-                    >
-                      <Code />
-                    </button>
-                    <button
-                      className="icon"
-                      onClick={() =>
-                        setReplyContent(replyContent + "\n```js\n```")
-                      }
-                      title="Código em bloco"
-                    >
-                      <BracketsCurly />
-                    </button>
-                    <button
-                      className="icon"
-                      onClick={() =>
-                        setReplyContent(
-                          replyContent + "\n- item 1\n- item 2\n- item 3"
-                        )
-                      }
-                      title="Lista não ordenada"
-                    >
-                      <ListBullets />
-                    </button>
-                    <button
-                      className="icon"
-                      onClick={() =>
-                        setReplyContent(
-                          replyContent + "\n1. item 1\n2. item 2\n3. item 3"
-                        )
-                      }
-                      title="Lista ordenada"
-                    >
-                      <ListNumbers />
-                    </button>
-                    <button
-                      className="icon"
-                      onClick={() =>
-                        setReplyContent(
-                          replyContent + "\n- [ ] item\n- [x] item"
-                        )
-                      }
-                      title="Caixa de seleção"
-                    >
-                      <CheckSquare />
-                    </button>
-                  </div>
-                  <div className="content_input_styles_slider">
-                    <button
-                      className={`icon ${!tabIsPreview && "active"}`}
-                      onClick={() => setTabIsPreview(false)}
-                    >
-                      <PencilSimple />
-                    </button>
-                    <button
-                      className={`icon ${tabIsPreview && "active"}`}
-                      onClick={() => setTabIsPreview(true)}
-                    >
-                      <Eye />
-                    </button>
-                  </div>
-                </div>
-                {tabIsPreview ? (
-                  <div
-                    className="preview"
-                    dangerouslySetInnerHTML={{
-                      __html: marked.parse(replyContent),
-                    }}
-                  ></div>
-                ) : (
-                  <textarea
-                    id="content"
-                    value={replyContent}
-                    onChange={(e) => setReplyContent(e.target.value)}
-                    placeholder="Conteúdo"
-                    minLength={800}
-                  ></textarea>
-                )}
-              </div>
+              <ContentForm
+                content={replyContent}
+                setContent={setReplyContent}
+                tabIsPreview={tabIsPreview}
+                setTabIsPreview={setTabIsPreview}
+                type="reply"
+              />
               <div className="buttons">
                 <button onClick={() => setModal(false)}>Cancelar</button>
                 <button className="active" onClick={() => handleSubmitReply()}>
@@ -577,30 +457,30 @@ const PostPage = ({ params }) => {
               <div className="left">
                 {auth.currentUser ? (
                   isOwnProfile ? (
-                    <Link
+                    <a
                       href={`/u/${username}/${post_path}/edit`}
                       className="btn icon-label"
                     >
                       Editar
                       <PencilSimple />
-                    </Link>
+                    </a>
                   ) : (
-                    <Link
+                    <a
                       className="btn icon-label danger"
                       href={`/u/${username}/${post_path}/report`}
                     >
                       Denunciar
                       <Warning />
-                    </Link>
+                    </a>
                   )
                 ) : (
-                  <Link
+                  <a
                     href={`/auth/login?redirect=/u/${username}/${post_path}`}
                     className="btn icon-label danger"
                   >
                     Entrar para reportar
                     <Warning />
-                  </Link>
+                  </a>
                 )}
               </div>
             </details>

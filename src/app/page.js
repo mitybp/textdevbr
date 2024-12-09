@@ -90,51 +90,66 @@ export default function Home() {
       toast.error("Erro ao carregar dados do usuário");
     }
   };
-
-  const fetchPosts = async (search = "") => {
-    if (loading || !hasMore) return;
+  const fetchPosts = async (search = "", isFollowing = false) => {
+    if (loading || !hasMore || (isFollowing && following.length === 0)) return;
     setLoading(true);
     try {
       let q;
+      const conditions = isFollowing
+        ? [where("author", "in", following)]
+        : [where("isDraft", "==", false)];
+  
       if (search) {
-        q = query(
-          collection(db, "posts"),
+        conditions.push(
           orderBy("titleLowerCase"),
           startAt(search.toLowerCase()),
-          endAt(search.toLowerCase() + "\uf8ff"),
-          limit(10),
-          where("isDraft", "==", false)
-        );
-      } else {
-        q = query(
-          collection(db, "posts"),
-          where("isDraft", "==", false),
-          limit(10)
+          endAt(search.toLowerCase() + "\uf8ff")
         );
       }
-
+  
+      q = query(collection(db, "posts"), ...conditions, limit(10));
+  
       const lastPost = posts[posts.length - 1];
       if (lastPost) {
-        q = query(q, startAfter(lastPost.date)); // Usa o campo 'date' para paginação
+        q = query(
+          q,
+          orderBy("titleLowerCase"), // Aplique a mesma ordem usada no startAfter
+          orderBy("date"), // Ordene também pelo campo 'date'
+          startAfter(lastPost.titleLowerCase, lastPost.date) // Passando ambos os campos
+        );
       }
-
+  
       const querySnapshot = await getDocs(q);
       const fetchedPosts = await mapPosts(querySnapshot);
-
-      // Filtra para evitar duplicados
+  
       const uniquePosts = fetchedPosts.filter(
         (post) => !posts.some((existing) => existing.id === post.id)
       );
-
+  
+      setPosts((prev) => [
+        ...prev.filter((existing) => !uniquePosts.some((p) => p.id === existing.id)),
+        ...uniquePosts,
+      ]);
       if (uniquePosts.length === 0) setHasMore(false);
-      setPosts((prev) => [...prev, ...uniquePosts]);
     } catch (error) {
-      toast.error("Erro ao buscar postagens");
+      toast.error(
+        isFollowing
+          ? "Erro ao buscar posts dos seguidos"
+          : "Erro ao buscar posts"
+      );
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
+  
+  // Substitui os dois fetch por esta lógica
+  useEffect(() => {
+    setSearchTerm(currentSearch);
+    setPosts([]);
+    setHasMore(true);
+    fetchPosts(currentSearch, currentTab === "following");
+  }, [tab, currentSearch]);
 
   const fetchFollowingPosts = async (search = "") => {
     if (loading || !hasMore || following.length === 0) return;
@@ -148,14 +163,12 @@ export default function Home() {
           orderBy("titleLowerCase"),
           startAt(search.toLowerCase()),
           endAt(search.toLowerCase() + "\uf8ff"),
-          limit(10),
-          where("isDraft", "==", false)
+          limit(10)
         );
       } else {
         q = query(
           collection(db, "posts"),
           where("author", "in", following),
-          where("isDraft", "==", false),
           limit(10)
         );
       }
@@ -223,6 +236,13 @@ export default function Home() {
     router.push(newUrl);
   };
 
+  if (posts == null) {
+    return (
+      <div className="loader">
+        <span className="object"></span>
+      </div>
+    );
+  }
   return (
     <>
       {auth.currentUser && (
@@ -265,15 +285,17 @@ export default function Home() {
       </section>
 
       <div className="post_list">
-        {posts.map((post) => (
-          <PostCard
-            key={post.id}
-            author={post.author}
-            post={post}
-            likedPosts={likedPosts}
-            savedPosts={savedPosts}
-          />
-        ))}
+        {posts
+          ?.filter((post) => post.isDraft === false && post.type === "post")
+          .map((post) => (
+            <PostCard
+              key={post.id}
+              author={post.author}
+              post={post}
+              likedPosts={likedPosts}
+              savedPosts={savedPosts}
+            />
+          ))}
       </div>
 
       <div ref={observerRef} className="loading-indicator">

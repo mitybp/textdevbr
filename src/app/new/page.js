@@ -1,4 +1,5 @@
 "use client";
+import ContentForm from "@/(components)/ContentForm";
 import { auth, db } from "@/firebase";
 import {
   BracketsCurly,
@@ -142,258 +143,80 @@ const New = () => {
       .replace(/--+/g, "-");
   };
 
-  renderer.heading = (text, level) => {
-    const slug = text.toLowerCase().replace(/\s+/g, "-");
-    return `<h${level} id="${slug}">${text}</h${level}>`;
-  };
-
-  marked.setOptions({
-    renderer,
-    breaks: true,
-    gfm: true,
-    highlight: (code, lang) => {
-      const language = hljs.getLanguage(lang) ? lang : "plaintext";
-      return hljs.highlight(code, { language }).value;
-    },
-  });
-
   return (
     <>
-        <h1>Nova postagem</h1>
-        <div className="alert">
-          <p>Olá, escritor(a) 👋!</p>
-          <p>
-            Para manter nossa comunidade organizada 🗃️ e com conteúdos
-            relevantes, faça questão de ler o{" "}
-            <a href="/code-of-conduct">Código de Conduta</a> 📄 e o{" "}
-            <a href="/u/dimitri.pusch/manual-de-postagem">Manual de Postagem</a>
-            .
-          </p>
-          <p>Obrigado e boa postagem!</p>
+      <h1>Nova postagem</h1>
+      <div className="alert">
+        <p>Olá, escritor(a) 👋!</p>
+        <p>
+          Para manter nossa comunidade organizada 🗃️ e com conteúdos relevantes,
+          faça questão de ler o <a href="/code-of-conduct">Código de Conduta</a>{" "}
+          📄.
+        </p>
+      </div>
+      <section className="form">
+        <div className="input">
+          <label htmlFor="title">Título</label>
+          <input
+            type="text"
+            id="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Título da postagem"
+            required
+          />
         </div>
-        <section className="form">
-          <div className="input">
-            <label htmlFor="title">Título</label>
-            <input
-              type="text"
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Título da postagem"
-              required
-            />
-          </div>
 
-          <div className="content_input">
-            <label htmlFor="content">Conteúdo</label>
-            <div className="content_input_styles_textarea">
-              <div className="content_input_styles">
-                <div className="content_input_styles_buttons">
-                  <details className="md" ref={headingRef}>
-                    <summary title="Títulos">
-                      <TextH />
-                    </summary>
-                    <div>
-                      <button
-                        className="icon-label"
-                        onClick={() => setContent(content + "# ")}
-                      >
-                        Título 1
-                        <TextHOne />
-                      </button>
-                      <button
-                        className="icon-label"
-                        onClick={() => setContent(content + "## ")}
-                      >
-                        Título 2
-                        <TextHTwo />
-                      </button>
-                      <button
-                        className="icon-label"
-                        onClick={() => setContent(content + "### ")}
-                      >
-                        Título 3
-                        <TextHThree />
-                      </button>
-                      <button
-                        className="icon-label"
-                        onClick={() => setContent(content + "#### ")}
-                      >
-                        Título 4
-                        <TextHFour />
-                      </button>
-                      <button
-                        className="icon-label"
-                        onClick={() => setContent(content + "##### ")}
-                      >
-                        Título 5
-                        <TextHFive />
-                      </button>
-                      <button
-                        className="icon-label"
-                        onClick={() => setContent(content + "###### ")}
-                      >
-                        Título 6
-                        <TextHSix />
-                      </button>
-                    </div>
-                  </details>
-                  <button
-                    className="icon"
-                    onClick={() => setContent(content + "**texto** ")}
-                    title="Negrito"
-                  >
-                    <TextB />
-                  </button>
-                  <button
-                    className="icon"
-                    onClick={() => setContent(content + "*texto* ")}
-                    title="Itálico"
-                  >
-                    <TextItalic />
-                  </button>
-                  <button
-                    className="icon"
-                    onClick={() => setContent(content + "~~texto~~ ")}
-                    title="Tachado"
-                  >
-                    <TextStrikethrough />
-                  </button>
-                  <button
-                    className="icon"
-                    onClick={() => setContent(content + "\n> ")}
-                    title="Citação"
-                  >
-                    <Quotes />
-                  </button>
-                  <button
-                    className="icon"
-                    onClick={() =>
-                      setContent(
-                        content + "[texto exibido](https://text.dev.br/)"
-                      )
-                    }
-                    title="Link"
-                  >
-                    <Link />
-                  </button>
-                  <button
-                    className="icon"
-                    onClick={() => setContent(content + "``")}
-                    title="Código em linha"
-                  >
-                    <Code />
-                  </button>
-                  <button
-                    className="icon"
-                    onClick={() => setContent(content + "```\n\n```")}
-                    title="Código"
-                  >
-                    <BracketsCurly />
-                  </button>
-                  <button
-                    className="icon"
-                    onClick={() => setContent(content + "![texto](url)")}
-                    title="Imagem"
-                  >
-                    <Image />
-                  </button>
-                  <button
-                    className="icon"
-                    onClick={() => setContent(content + "- item")}
-                    title="Lista não ordenada"
-                  >
-                    <ListBullets />
-                  </button>
-                  <button
-                    className="icon"
-                    onClick={() => setContent(content + "1. item")}
-                    title="Lista ordenada"
-                  >
-                    <ListNumbers />
-                  </button>
-                  <button
-                    className="icon"
-                    onClick={() =>
-                      setContent(
-                        content +
-                          "| titulo 1 | titulo 2 |\n| ------ | ------ |\n| valor 1 | valor 2 |"
-                      )
-                    }
-                    title="Tabela"
-                  >
-                    <Table />
-                  </button>
-                </div>
-                <div className="content_input_styles_slider">
-                  <button
-                    className={`icon ${!tabIsPreview && "active"}`}
-                    onClick={() => setTabIsPreview(false)}
-                  >
-                    <PencilSimple />
-                  </button>
-                  <button
-                    className={`icon ${tabIsPreview && "active"}`}
-                    onClick={() => setTabIsPreview(true)}
-                  >
-                    <Eye />
-                  </button>
-                </div>
-              </div>
-              {tabIsPreview ? (
-                <div
-                  className="preview"
-                  dangerouslySetInnerHTML={{ __html: marked(content) }}
-                ></div>
-              ) : (
-                <textarea
-                  id="content"
-                  placeholder="Escreva o conteúdo da postagem"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  required
-                ></textarea>
-              )}
-            </div>
-            <small
-              className={
-                content.trim().split(" ").length < 200 ? "danger" : "success"
-              }
+        <div className="content_input">
+          <label htmlFor="content">Conteúdo</label>
+
+          <ContentForm
+            content={content}
+            setContent={setContent}
+            tabIsPreview={tabIsPreview}
+            setTabIsPreview={setTabIsPreview}
+            headingRef={headingRef}
+            type="post"
+          />
+          <small
+            className={
+              content.trim().split(" ").length < 200 ? "danger" : "success"
+            }
+          >
+            {content.trim().split(" ").length}/200
+          </small>
+          <small>
+            Conteúdo em MarkDown.{" "}
+            <a
+              href="https://www.markdownguide.org/basic-syntax/"
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              {content.trim().split(" ").length}/200
-            </small>
-            <small>
-              Conteúdo em MarkDown.{" "}
-              <a
-                href="https://www.markdownguide.org/basic-syntax/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Ver documentação
-              </a>
-              .
-            </small>
-          </div>
+              Ver documentação
+            </a>
+            .
+          </small>
+        </div>
 
-          <div className="input">
-            <label htmlFor="source">Fonte (opcional)</label>
-            <input
-              type="text"
-              id="source"
-              value={source}
-              onChange={(e) => setSource(e.target.value)}
-              placeholder="https://website.com/"
-            />
-          </div>
+        <div className="input">
+          <label htmlFor="source">Fonte (opcional)</label>
+          <input
+            type="text"
+            id="source"
+            value={source}
+            onChange={(e) => setSource(e.target.value)}
+            placeholder="https://website.com/"
+          />
+        </div>
 
-          <hr />
-          <div className="buttons">
-            <button onClick={() => handleSubmit(true)}>Salvar rascunho</button>
-            <button onClick={() => handleSubmit(false)} className="active">
-              Publicar
-            </button>
-          </div>
-        </section>
+        <hr />
+        <div className="buttons">
+          <button onClick={() => handleSubmit(true)}>Salvar rascunho</button>
+          <button onClick={() => handleSubmit(false)} className="active">
+            Publicar
+          </button>
+        </div>
+      </section>
     </>
   );
 };
