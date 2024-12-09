@@ -600,11 +600,18 @@ section.user_info {
     display: flex;
     flex-direction: column;
 
-    .user_footer_users {
-      button {
-        border: none;
-        padding: 0;
-        font-size: 16px;
+    .user_footer_infos {
+      display: flex !important;
+      align-items: center;
+      gap: 10px;
+      span, button{
+        line-height: 25px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        svg{
+          vertical-align: middle;
+        }
       }
     }
     .user_footer_links {

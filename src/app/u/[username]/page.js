@@ -3,7 +3,6 @@ import PostCard from "@/(components)/PostCard";
 import ShareMenu from "@/(components)/ShareMenu";
 import { auth, db } from "@/firebase";
 import {
-  ArrowSquareOut,
   Cake,
   CardsThree,
   ChatTeardrop,
@@ -18,6 +17,7 @@ import {
   LinkedinLogo,
   PencilSimple,
   PlusCircle,
+  Seal,
   TwitterLogo,
   UserMinus,
   UserPlus,
@@ -41,14 +41,12 @@ import {
 } from "firebase/firestore";
 import { marked } from "marked";
 import Image from "next/image";
-import { notFound, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-
-import Link from "next/link";
-import { formatDate, formatNumber, formatTimeAgo } from "@/(components)/format";
+import { formatDate, formatNumber } from "@/(components)/format";
 import ReplyCard from "@/(components)/ReplyCard";
-
+import Link from "next/link";
 export default function UserPage({ params }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -452,7 +450,7 @@ export default function UserPage({ params }) {
         <div className="modal">
           <div className="modal_container">
             <div className="modal_header">
-              <h3>{modal.type == "following" ? "Seguindo" : "Seguidores"}</h3>
+              <h3>{modal.type == "following" ? "Seguindo" : modal.type=="followers"?"Seguidores":"Emblemas"}</h3>
               <button
                 className="icon"
                 onClick={() => setModal({ isOpen: false, type: "" })}
@@ -484,7 +482,7 @@ export default function UserPage({ params }) {
                     <p>Este usuário não segue ninguém</p>
                   )}
                 </section>
-              ) : (
+              ) : modal.type=="followers"?(
                 <section className="user_list">
                   {userFollowers.length > 0 ? (
                     userFollowers.map((u, index) => (
@@ -507,6 +505,8 @@ export default function UserPage({ params }) {
                     <p>Este usuário não possui seguidores</p>
                   )}
                 </section>
+              ):(
+                <p>Emblemas</p>
               )}
             </div>
           </div>
@@ -597,6 +597,23 @@ export default function UserPage({ params }) {
               dangerouslySetInnerHTML={{ __html: description }}
             />
           )}
+          <div className="user_footer_infos">
+            <span>
+              <Cake />
+              Entrou em {formatDate(user.joinedAt)}
+            </span>
+            {/* <button
+              className="nostyle"
+              onClick={() => setModal({isOpen: true, type:"badges"})}
+            >
+              <Seal />
+              {
+                (user.badges.length == 1
+                  ? "1 emblema"
+                  : `${user.badges.length} emblemas`)
+              }
+            </button> */}
+          </div>
           <div className="user_footer_links">
             <div className="user_footer_links_social">
               {user.website && (

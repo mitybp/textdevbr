@@ -47,16 +47,16 @@ export default function SignUp() {
       const user = userCredential.user;
 
       await setDoc(doc(db, "users", user.uid), {
+        badges: [],
+        description: "",
         email: user.email,
-        username: formatUsername(username),
-        joinedAt: Timestamp.now(),
         emailVerified: false,
         followers: [],
         following: [],
+        joinedAt: Timestamp.now(),
         likedPosts: [],
-        savedPosts: [],
-        description: "",
         photoURL: null,
+        savedPosts: [],
         social: {
           facebook: "",
           github: "",
@@ -65,6 +65,8 @@ export default function SignUp() {
           twitter: "",
           linkedin: "",
         },
+        uid: user.uid,
+        username: formatUsername(username),
         website: "",
       });
 

@@ -199,16 +199,15 @@ export default function Login() {
       }
     }
     return {
+      badges: [],
+      description: "",
       email: user.email,
       emailVerified: user.emailVerified,
-      joinedAt: Timestamp.now(),
-      username: baseUsername,
-      photoURL: user.photoURL || null,
-      uid: user.uid,
       followers: [],
       following: [],
-      description: "",
+      joinedAt: Timestamp.now(),
       likedPosts: [],
+      photoURL: user.photoURL || null,
       savedPosts: [],
       social: {
         facebook: "",
@@ -218,6 +217,8 @@ export default function Login() {
         twitter: "",
         linkedin: "",
       },
+      uid: user.uid,
+      username: baseUsername,
       website: "",
     };
   };
