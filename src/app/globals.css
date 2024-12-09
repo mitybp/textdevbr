@@ -554,8 +554,8 @@ section.user_info {
     position: absolute;
     right: 0;
     top: 0;
-    display: flex;
-    flex-direction: column;
+    display: flex !important;
+    flex-direction: column !important;
     gap: 4px;
   }
   .user_header {
@@ -583,7 +583,7 @@ section.user_info {
       flex-direction: column !important;
       gap: 6px;
       .user_header_info_users {
-        display: flex;
+        display: flex !important;
         align-items: center;
         gap: 10px;
         button {
@@ -1182,7 +1182,7 @@ div.post_card {
       margin-block: 4px;
     }
     small {
-      display: flex;
+      display: flex !important;
       align-items: center;
       gap: 4px;
       flex-wrap: wrap;
@@ -1195,7 +1195,7 @@ div.post_card {
   }
   div.post_card_footer {
     width: 100%;
-    display: flex;
+    display: flex !important;
     flex-direction: row;
     align-items: center;
     gap: 4px;
