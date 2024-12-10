@@ -29,7 +29,6 @@ function Layout({ children }) {
   const [user, setUser] = useState(null);
   const menuRef = useRef(null);
   const router = useRouter();
-  const [newActivity, setNewActivity] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
@@ -114,7 +113,7 @@ function Layout({ children }) {
               <hr className="y" />
               <Link
                 href="/activity"
-                className={`btn icon ${newActivity ? "dot" : ""}`}
+                className="btn icon"
                 title="Minha atividade"
               >
                 <Pulse />
@@ -134,7 +133,7 @@ function Layout({ children }) {
                 </summary>
                 <div className="left">
                   <Link
-                    href={`/u/${user.username}`}
+                    href={`/${user.username}`}
                     className="btn icon-label active"
                     onClick={() => menuRef.current.removeAttribute("open")}
                   >
@@ -223,7 +222,7 @@ function Layout({ children }) {
         </div>
         <div>
           <p>
-            Feito com ❤️ por <Link href="/u/dimitri.pusch">dimitri.pusch</Link>
+            Feito com ❤️ por <Link href="/dimitri.pusch">dimitri.pusch</Link>
           </p>
         </div>
       </footer>

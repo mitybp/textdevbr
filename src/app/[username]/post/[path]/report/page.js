@@ -12,15 +12,16 @@ import {
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import toast from "react-hot-toast";
 
-const ReportUser = ({ params }) => {
-  const [reasons, setReasons] = useState([]);
+const ReportComment = ({ params }) => {
+  const [reasons, setReasons] = useState([]); // Agora é um array
   const [user, setUser] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
-    document.title = "Denunciar usuário - text.dev.br";
+    document.title = "Denunciar postagem - text.dev.br";
 
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
@@ -32,17 +33,19 @@ const ReportUser = ({ params }) => {
           setUser({ ...tempUser, uid: u.uid });
         }
       } else {
-        router.push(`/auth/login/?redirect=/u/${params.username}/report`);
-        toast.error("Faça login para denunciar o usuário.");
+        router.push(
+          `/auth/login/?redirect=/${params.username}/post/${params.path}/report`
+        );
+        toast.error("Faça login para denunciar a postagem.");
       }
     });
 
     setInterval(() => {
       return () => unsubscribe();
-    }, 10000);;
-  }, [router]);
+    }, 10000);
+  }, [router, user]);
 
-  const handleReasonToggle = (reason) => {
+  const toggleReason = (reason) => {
     setReasons((prev) =>
       prev.includes(reason)
         ? prev.filter((r) => r !== reason)
@@ -51,6 +54,14 @@ const ReportUser = ({ params }) => {
   };
 
   const handleSubmit = async () => {
+    if (!user) {
+      toast.error("Você precisa fazer login para denunciar a postagem!");
+      router.push(
+        `/auth/login/?redirect=/${params.username}/post/${params.path}/report`
+      );
+      return;
+    }
+
     if (reasons.length === 0) {
       toast.error("Selecione pelo menos uma razão para a denúncia!");
       return;
@@ -71,7 +82,8 @@ const ReportUser = ({ params }) => {
       const reportedUser = reportedUserSnap.docs[0].data();
 
       const reportDocData = {
-        reasons,
+        reasons, // Armazena múltiplos motivos
+        path: params.username + "/post/" + params.path,
         reporter: {
           username: user.username,
           uid: user.uid,
@@ -85,7 +97,7 @@ const ReportUser = ({ params }) => {
 
       await addDoc(collection(db, "reports"), reportDocData);
       toast.success("Denúncia enviada com sucesso!");
-      router.push(`/u/${params.username}`);
+      router.push(`/${params.username}`);
     } catch (error) {
       console.error(error);
       toast.error("Ocorreu um erro ao enviar a denúncia. Tente novamente.");
@@ -94,7 +106,7 @@ const ReportUser = ({ params }) => {
 
   return (
     <>
-      <h1>Denunciar usuário</h1>
+      <h1>Denunciar postagem</h1>
       <p>
         Caso você denuncie com o fim de prejudicar o usuário, você poderá ser
         bloqueado ou expulso da comunidade.
@@ -107,14 +119,12 @@ const ReportUser = ({ params }) => {
             "Violação da Privacidade",
             "Fraude ou tentativa de scam",
             "Discurso de ódio, discriminação ou preconceito",
-            "Informações não apropriadas no perfil",
-            "Usuário menor de 15 anos",
             "Conteúdo não relevante para a comunidade",
           ].map((reason) => (
             <label
               key={reason}
               className="checkbox"
-              onClick={() => handleReasonToggle(reason)}
+              onClick={() => toggleReason(reason)}
             >
               <span className={reasons.includes(reason) ? "checked" : ""} />
               {reason}
@@ -123,16 +133,15 @@ const ReportUser = ({ params }) => {
         </div>
         <p>
           <b>
-            Confira se este é o perfil que você irá denúnciar para evitar
+            Confira se esta é a postagem que você irá denúnciar para evitar
             conflitos e denúncias equivocadas.
           </b>
         </p>
-        <h3>
-          Usuário a ser denunciado:{" "}
-          <a href={`/u/${params.username}`}>{params.username}</a>
-        </h3>
         <div className="buttons">
-          <Link href={`/u/${params.username}`} className="btn">
+          <Link
+            href={`/${params.username}/post/${params.path}`}
+            className="btn"
+          >
             Cancelar
           </Link>
           <button className="active" onClick={handleSubmit}>
@@ -144,6 +153,5 @@ const ReportUser = ({ params }) => {
   );
 };
 
-import Link from "next/link";
 
-export default ReportUser;
+export default ReportComment;

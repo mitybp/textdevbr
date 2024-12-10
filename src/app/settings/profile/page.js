@@ -7,6 +7,7 @@ import {
   CheckSquare,
   Eye,
   FacebookLogo,
+  Gear,
   GithubLogo,
   GlobeSimple,
   InstagramLogo,
@@ -15,6 +16,7 @@ import {
   ListBullets,
   ListNumbers,
   Pencil,
+  PencilSimple,
   TextB,
   TextH,
   TextHFive,
@@ -66,7 +68,7 @@ const handleSaveProfile = async ({
     });
 
     toast.success("Perfil atualizado com sucesso!");
-    router.push(`/u/${username}`);
+    router.push(`/${username}`);
   } catch (error) {
     console.error("Erro ao atualizar perfil:", error);
     toast.error("Erro ao atualizar perfil.");
@@ -131,6 +133,16 @@ export default function ProfileEdit() {
 
   return (
     <>
+      <section className="tabs top">
+        <a href="/settings/profile" className="btn icon-label active">
+          <PencilSimple />
+          Editar perfil
+        </a>
+        <a href="/settings/account" className="btn icon-label">
+          <Gear />
+          Configurações da conta
+        </a>
+      </section>
       <h1>Editar Perfil</h1>
       <section className="form">
         <h3>Foto de perfil</h3>

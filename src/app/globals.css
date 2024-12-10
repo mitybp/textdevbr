@@ -26,6 +26,10 @@
   --inlinecode: #d63384;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background-color: var(--bg);
   color: var(--text);
@@ -374,6 +378,13 @@ div.slider {
 }
 
 /** SECTIONS */
+section.pagination {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
 section.doc {
   h1 {
     font-size: 2.5rem;
@@ -408,6 +419,7 @@ section.doc {
       font-size: larger;
       padding-left: 10px;
       cursor: pointer;
+      color: var(--text);
       &::marker {
         display: none !important;
       }
@@ -418,7 +430,7 @@ section.doc {
       border-bottom: none;
       background-color: var(--primary);
       border-color: var(--primary);
-      color: var(--bg);
+      color: #fff;
     }
     div {
       border: 1px solid var(--primary);
@@ -501,6 +513,7 @@ section.replies {
     display: flex;
     align-items: center;
     gap: 4px;
+    height: 30px;
   }
   .reply_card_sidebar {
     display: flex;
@@ -956,7 +969,7 @@ section.tabs {
   &.top {
     margin-block: 0 10px;
   }
-  button {
+  button, a {
     flex: 0.5 0;
     width: calc(50% - 3px);
   }
@@ -1024,6 +1037,9 @@ article {
     margin-left: 40px;
     margin-block: 10px;
   }
+  img {
+    width: 100%;
+  }
 }
 
 section.explore {
@@ -1074,6 +1090,21 @@ details.md {
       color: var(--bg);
       &:hover {
         background-color: var(--secondary);
+      }
+    }
+
+    &.dot {
+      position: relative;
+      &:after {
+        position: absolute;
+        content: " ";
+        display: flex;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background-color: var(--danger);
+        top: 21px;
+        left: 21px;
       }
     }
 

@@ -51,7 +51,7 @@ const EditPost = () => {
   const [post, setPost] = useState(null);
   const [tabIsPreview, setTabIsPreview] = useState(false);
   const router = useRouter();
-  const { username, post_path } = useParams();
+  const { username, path } = useParams();
   const headingRef = useRef(null);
   const renderer = new marked.Renderer();
 
@@ -78,7 +78,7 @@ const EditPost = () => {
         }
       } else {
         setUser(null);
-        router.push(`/auth/login?redirect=/u/${username}/${post_path}/edit`);
+        router.push(`/auth/login?redirect=/${username}/${path}/edit`);
         toast.error("Você precisa entrar para editar a postagem!");
       }
     });
@@ -94,7 +94,7 @@ const EditPost = () => {
         try {
           const postDocQuery = query(
             collection(db, "posts"),
-            where("path", "==", post_path)
+            where("path", "==", path)
           );
           const postDocSnap = (await getDocs(postDocQuery)).docs[0];
           if (postDocSnap.exists()) {
@@ -106,7 +106,7 @@ const EditPost = () => {
               setSource(postData.source || "");
             } else {
               toast.error("Você não tem permissão para editar esta postagem.");
-              router.push(`/u/${username}/${post_path}`);
+              router.push(`/${username}/${path}`);
             }
           } else {
             toast.error("Postagem não encontrada.");
@@ -120,12 +120,12 @@ const EditPost = () => {
 
       fetchPost();
     }
-  }, [user, username, post_path, router]);
+  }, [user, username, path, router]);
 
   const handleSubmit = async (isDraft) => {
     if (!user) {
       toast.error("Você precisa fazer login para editar esta postagem!");
-      router.push(`/auth/login/?return=/u/${username}/${post_path}/edit`);
+      router.push(`/auth/login/?return=/${username}/${path}/edit`);
       return;
     }
 
@@ -144,7 +144,7 @@ const EditPost = () => {
     try {
       const postQuery = query(
         collection(db, "posts"),
-        where("path", "==", post_path)
+        where("path", "==", path)
       );
       const postRef = (await getDocs(postQuery)).docs[0].ref;
       await updateDoc(postRef, {
@@ -161,7 +161,7 @@ const EditPost = () => {
           ? "Rascunho salvo com sucesso!"
           : "Postagem atualizada com sucesso!"
       );
-      router.push(`/u/${username}/${formatUsername(title)}`);
+      router.push(`/${username}/${formatUsername(title)}`);
     } catch (error) {
       console.error("Erro ao atualizar a postagem:", error);
       toast.error("Erro ao atualizar a postagem.");
@@ -205,7 +205,7 @@ const EditPost = () => {
           toast.success("Comentário excluído com sucesso!");
         }
       }
-      router.push(`/u/${username}/${post_path}`);
+      router.push(`/${username}/${path}`);
     } catch (err) {
       console.error(err);
       toast.error("Erro ao excluir a postagem ou comentário.");
@@ -289,7 +289,7 @@ const EditPost = () => {
           {post.isDraft ? (
             <button onClick={() => handleSubmit(true)}>Salvar rascunho</button>
           ) : (
-            <a href={`/${username}/${post_path}`} className="btn">
+            <a href={`/${username}/${path}`} className="btn">
               Cancelar
             </a>
           )}

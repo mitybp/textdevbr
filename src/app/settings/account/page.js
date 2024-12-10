@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 import Link from "next/link";
+import { Gear, PencilSimple } from "@phosphor-icons/react";
 
 export default function ProfileSettings() {
   useEffect(()=>{
@@ -10,6 +11,16 @@ export default function ProfileSettings() {
   })
   return (
     <>
+    <section className="tabs top">
+      <a href="/settings/profile" className="btn icon-label">
+        <PencilSimple />
+        Editar perfil
+      </a>
+      <a href="/settings/account" className="btn icon-label active">
+        <Gear />
+        Configurações da conta
+      </a>
+    </section>
       <h1>Configurações</h1>
       <section className="form">
         <div>

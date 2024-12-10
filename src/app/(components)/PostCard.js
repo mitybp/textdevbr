@@ -2,6 +2,7 @@
 import { auth } from "@/firebase";
 import {
   BookmarkSimple,
+  ChatTeardrop,
   DotsThreeVertical,
   Heart,
   PencilSimple,
@@ -24,6 +25,7 @@ const PostCard = (props) => {
   const [likes, setLikes] = useState(post.likes || 0);
   const shareRef = useRef(null);
   const menuRef = useRef(null);
+  const router=useRouter()
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -45,7 +47,7 @@ const PostCard = (props) => {
     <div className="post_card" key={post.id}>
       <div className="post_card_info">
         <small>
-          <Link href={`/u/${author.username}`}>{author.username}</Link>
+          <Link href={`/${author.username}`}>{author.username}</Link>
           <span>{"•"}</span>
           <span className="tooltip" data-value={formatFullDate(post.date)}>
             {formatTimeAgo(post.date)}
@@ -64,7 +66,7 @@ const PostCard = (props) => {
           )}
         </small>
         <h3>
-          <Link href={`/u/${author.username}/${post.path}`}>{post.title}</Link>
+          <Link href={`/${author.username}/post/${post.path}`}>{post.title}</Link>
         </h3>
         <div className="post_card_footer">
           <button
@@ -82,11 +84,18 @@ const PostCard = (props) => {
               weight={savedPosts?.has(post.id) ? "fill" : "regular"}
             />
           </button>
+          <a
+            href={`/${author.username}/post/${post.path}/#replies`}
+            className={`btn icon${Array(post.replies).length==0?"":"-label"}`}
+          >
+            <ChatTeardrop />
+            {Array(post.replies).length==0?"":Array(post.replies).length}
+          </a>
           <ShareMenu
             side="right"
             ref={shareRef}
             text={`Veja a postagem ${post.title} de ${author.username} no text.dev.br!`}
-            path={`u/${author.username}/${post.path}`}
+            path={`${author.username}/${post.path}`}
           />
         </div>
       </div>
@@ -98,7 +107,7 @@ const PostCard = (props) => {
           <div className="left">
             {isProfile ? (
               <Link
-                href={`/u/${author.username}/${post.path}/edit`}
+                href={`/${author.username}/post/${post.path}/edit`}
                 className="btn icon-label"
               >
                 Editar postagem <PencilSimple />
@@ -106,14 +115,14 @@ const PostCard = (props) => {
             ) : auth.currentUser ? (
               author.uid === auth.currentUser.uid ? (
                 <Link
-                  href={`/u/${author.username}/${post.path}/edit`}
+                  href={`/${author.username}/post/${post.path}/edit`}
                   className="btn icon-label"
                 >
                   Editar postagem <PencilSimple />
                 </Link>
               ) : (
                 <Link
-                  href={`/u/${author.username}/${post.path}/report`}
+                  href={`/${author.username}/post/${post.path}/report`}
                   className="btn icon-label danger"
                 >
                   Denunciar
@@ -122,7 +131,7 @@ const PostCard = (props) => {
               )
             ) : (
               <Link
-                href={`/u/${author.username}/${post.path}/report`}
+                href={`/${author.username}/post/${post.path}/report`}
                 className="btn icon-label danger"
               >
                 Denunciar
@@ -138,5 +147,6 @@ const PostCard = (props) => {
 
 import Link from "next/link";
 import { formatFullDate, formatTimeAgo } from "./format";
+import { useRouter } from "next/navigation";
 
 export default PostCard;

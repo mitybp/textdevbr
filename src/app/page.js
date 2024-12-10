@@ -1,81 +1,41 @@
 "use client";
-
 import { auth, db } from "@/firebase";
 import {
-  ClockCounterClockwise,
-  MagnifyingGlass,
-  Users,
+  ArrowUp,
+  CardsThree,
+  ChatsTeardrop,
+  Circle,
   X,
 } from "@phosphor-icons/react";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   collection,
   doc,
-  endAt,
   getDoc,
   getDocs,
-  limit,
   orderBy,
   query,
-  startAfter,
-  where,
 } from "firebase/firestore";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import PostCard from "./(components)/PostCard";
+import ReplyCard from "./(components)/ReplyCard";
 
 export default function Home() {
   const [posts, setPosts] = useState([]);
   const [likedPosts, setLikedPosts] = useState(new Set());
   const [savedPosts, setSavedPosts] = useState(new Set());
-  const [following, setFollowing] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [orderByDirection, setOrderByDirection] = useState("desc");
   const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [tab, setTab] = useState("recents");
-
-  const observerRef = useRef();
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const currentTab = searchParams.get("tab") || "recents";
-  const currentSearch = searchParams.get("q") || "";
+  const [activeTab, setActiveTab] = useState("posts");
 
   useEffect(() => {
     onAuthStateChanged(auth, (user) => {
       if (user) fetchUserData(user);
     });
-  }, []);
-
-  useEffect(() => {
-    setSearchTerm(currentSearch);
-    setPosts([]);
-    setHasMore(true);
-    if (tab === "following" || currentTab === "following") {
-      fetchFollowingPosts(currentSearch);
-    } else {
-      fetchPosts(currentSearch);
-    }
-  }, [tab, currentSearch]);
-
-  useEffect(() => {
-    if (!loading && hasMore) {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting) {
-            if (tab === "following" || currentTab === "following") {
-              fetchFollowingPosts(currentSearch);
-            } else {
-              fetchPosts(currentSearch);
-            }
-          }
-        },
-        { threshold: 1.0 }
-      );
-      if (observerRef.current) observer.observe(observerRef.current);
-      return () => observer.disconnect();
-    }
-  }, [loading, hasMore, tab, currentSearch]);
+    fetchPosts();
+  }, [orderByDirection]); // Refaz a busca quando a direção da ordenação muda
 
   const fetchUserData = async (user) => {
     try {
@@ -84,189 +44,118 @@ export default function Home() {
         const userData = userDoc.data();
         setSavedPosts(new Set(userData.savedPosts || []));
         setLikedPosts(new Set(userData.likedPosts || []));
-        setFollowing(userData.following || []);
       }
     } catch (error) {
       toast.error("Erro ao carregar dados do usuário");
     }
   };
-  const fetchPosts = async (search = "", isFollowing = false) => {
-    if (loading || !hasMore || (isFollowing && following.length === 0)) return;
+
+  const fetchPosts = async () => {
     setLoading(true);
     try {
-      let q;
-      const conditions = isFollowing
-        ? [where("author", "in", following)]
-        : [where("isDraft", "==", false)];
-  
-      if (search) {
-        conditions.push(
-          orderBy("titleLowerCase"),
-          startAt(search.toLowerCase()),
-          endAt(search.toLowerCase() + "\uf8ff")
-        );
-      }
-  
-      q = query(collection(db, "posts"), ...conditions, limit(10));
-  
-      const lastPost = posts[posts.length - 1];
-      if (lastPost) {
-        q = query(
-          q,
-          orderBy("titleLowerCase"), // Aplique a mesma ordem usada no startAfter
-          orderBy("date"), // Ordene também pelo campo 'date'
-          startAfter(lastPost.titleLowerCase, lastPost.date) // Passando ambos os campos
-        );
-      }
-  
+      const q = query(
+        collection(db, "posts"),
+        orderBy("date", orderByDirection)
+      );
       const querySnapshot = await getDocs(q);
-      const fetchedPosts = await mapPosts(querySnapshot);
-  
-      const uniquePosts = fetchedPosts.filter(
-        (post) => !posts.some((existing) => existing.id === post.id)
-      );
-  
-      setPosts((prev) => [
-        ...prev.filter((existing) => !uniquePosts.some((p) => p.id === existing.id)),
-        ...uniquePosts,
-      ]);
-      if (uniquePosts.length === 0) setHasMore(false);
-    } catch (error) {
-      toast.error(
-        isFollowing
-          ? "Erro ao buscar posts dos seguidos"
-          : "Erro ao buscar posts"
-      );
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Substitui os dois fetch por esta lógica
-  useEffect(() => {
-    setSearchTerm(currentSearch);
-    setPosts([]);
-    setHasMore(true);
-    fetchPosts(currentSearch, currentTab === "following");
-  }, [tab, currentSearch]);
+      const fetchedPosts = [];
 
-  const fetchFollowingPosts = async (search = "") => {
-    if (loading || !hasMore || following.length === 0) return;
-    setLoading(true);
-    try {
-      let q;
-      if (search) {
-        q = query(
-          collection(db, "posts"),
-          where("author", "in", following),
-          orderBy("titleLowerCase"),
-          startAt(search.toLowerCase()),
-          endAt(search.toLowerCase() + "\uf8ff"),
-          limit(10)
-        );
-      } else {
-        q = query(
-          collection(db, "posts"),
-          where("author", "in", following),
-          limit(10)
-        );
+      // Usar for...of para garantir que todas as promises sejam resolvidas
+      for (const post of querySnapshot.docs) {
+        const postData = post.data();
+        const userDoc = await getDoc(doc(db, "users", postData.author));
+        const username = userDoc.exists() ? userDoc.data().username : null;
+
+        fetchedPosts.push({
+          ...postData,
+          author: { username: username, uid: postData.author },
+        });
       }
 
-      const lastPost = posts[posts.length - 1];
-      if (lastPost) {
-        q = query(q, startAfter(lastPost.date)); // Usa o campo 'date' para paginação
-      }
-
-      const querySnapshot = await getDocs(q);
-      const fetchedPosts = await mapPosts(querySnapshot);
-
-      // Filtra para evitar duplicados
-      const uniquePosts = fetchedPosts.filter(
-        (post) => !posts.some((existing) => existing.id === post.id)
-      );
-
-      if (uniquePosts.length === 0) setHasMore(false);
-      setPosts((prev) => [...prev, ...uniquePosts]);
+      setPosts(fetchedPosts);
     } catch (error) {
-      toast.error("Erro ao buscar postagens dos seguidos");
-      console.error(error);
+      toast.error("Erro ao buscar posts");
     } finally {
       setLoading(false);
     }
   };
 
-  const mapPosts = async (querySnapshot) => {
-    const tempPosts = [];
-    const authorCache = {};
-
-    for (const post of querySnapshot.docs) {
-      const postData = post.data();
-      if (!authorCache[postData.author]) {
-        authorCache[postData.author] = await fetchAuthorData(postData.author);
-      }
-      tempPosts.push({ ...postData, author: authorCache[postData.author] });
+  const renderPosts = () => {
+    let filteredPosts = posts;
+    if (activeTab === "posts") {
+      filteredPosts = posts.filter((post) => post.type === "post");
+    } else if (activeTab === "comments") {
+      filteredPosts = posts.filter((post) => post.type === "reply");
     }
-    return tempPosts;
+
+    // Filtro de busca por título ou conteúdo
+    return filteredPosts
+      .filter((post) =>
+        post.type === "post"
+          ? searchTerm
+            ? post.title?.toLowerCase().includes(searchTerm.toLowerCase())
+            : true
+          : searchTerm
+            ? post.content?.toLowerCase().includes(searchTerm.toLowerCase())
+            : true
+      )
+      .filter((post) => post.isDraft == false)
+      .map((post, index) =>
+        post.type === "reply" ? (
+          <ReplyCard
+            reply={post}
+            key={index}
+            likedPosts={likedPosts}
+            savedPosts={savedPosts}
+            setLikedPosts={setLikedPosts}
+            setSavedPosts={setSavedPosts}
+            inList={true}
+          />
+        ) : (
+          <PostCard
+            key={index}
+            author={post.author}
+            post={post}
+            likedPosts={likedPosts}
+            savedPosts={savedPosts}
+            setLikedPosts={setLikedPosts}
+            setSavedPosts={setSavedPosts}
+          />
+        )
+      );
   };
 
-  const fetchAuthorData = async (authorUid) => {
-    try {
-      const authorDoc = await getDoc(doc(db, "users", authorUid));
-      if (authorDoc.exists()) {
-        const authorData = authorDoc.data();
-        return {
-          username: authorData.username || "Desconhecido",
-          uid: authorData.uid,
-          photoURL:
-            authorData.photoURL ||
-            `https://eu.ui-avatars.com/api/?name=${authorData.username.replaceAll(" ", "+")}&size=250`,
-        };
-      }
-      return {};
-    } catch (error) {
-      console.error(error);
-      toast.error("Erro ao receber dados do autor!");
-      return {};
-    }
+  const toggleOrder = () => {
+    const newOrder = orderByDirection === "desc" ? "asc" : "desc";
+    setOrderByDirection(newOrder);
   };
 
-  const handleSearch = () => {
-    const newUrl = `/?tab=${currentTab}&q=${searchTerm}`;
-    router.push(newUrl);
-  };
-
-  if (posts == null) {
-    return (
-      <div className="loader">
-        <span className="object"></span>
-      </div>
-    );
-  }
   return (
     <>
-      {auth.currentUser && (
-        <section className="tabs top">
-          <button
-            className={`icon-label ${tab === "recents" && "active"}`}
-            onClick={() => {
-              setTab("recents");
-              router.push("/?tab=recents");
-            }}
-          >
-            <ClockCounterClockwise /> <span>Recentes</span>
-          </button>
-          <button
-            className={`icon-label ${tab === "following" && "active"}`}
-            onClick={() => {
-              setTab("following");
-              router.push("/?tab=following");
-            }}
-          >
-            <Users /> <span>Seguindo</span>
-          </button>
-        </section>
-      )}
+      <section className="tabs top">
+        <button
+          className={`icon-label ${activeTab === "posts" ? "active" : ""}`}
+          onClick={() => setActiveTab("posts")}
+        >
+          <CardsThree />
+          Postagens
+        </button>
+        <button
+          className={`icon-label ${activeTab === "comments" ? "active" : ""}`}
+          onClick={() => setActiveTab("comments")}
+        >
+          <ChatsTeardrop />
+          Comentários
+        </button>
+        <button
+          className={`icon-label ${activeTab === "all" ? "active" : ""}`}
+          onClick={() => setActiveTab("all")}
+        >
+          <Circle />
+          Todos
+        </button>
+      </section>
+
       <section className="search">
         <div className="input_x">
           <input
@@ -275,35 +164,20 @@ export default function Home() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <button className="icon">
+          <button className="icon" onClick={() => setSearchTerm("")}>
             <X />
           </button>
         </div>
-        <button onClick={handleSearch} className="icon active">
-          <MagnifyingGlass />
+        <button
+          className={`icon ${orderByDirection === "asc" ? "rotate-180" : ""}`}
+          onClick={toggleOrder}
+        >
+          <ArrowUp />
         </button>
       </section>
 
       <div className="post_list">
-        {posts
-          ?.filter((post) => post.isDraft === false && post.type === "post")
-          .map((post) => (
-            <PostCard
-              key={post.id}
-              author={post.author}
-              post={post}
-              likedPosts={likedPosts}
-              savedPosts={savedPosts}
-            />
-          ))}
-      </div>
-
-      <div ref={observerRef} className="loading-indicator">
-        {loading && (
-          <div className="loader">
-            <span className="object"></span>
-          </div>
-        )}
+        {loading ? "Carregando..." : renderPosts()}
       </div>
     </>
   );

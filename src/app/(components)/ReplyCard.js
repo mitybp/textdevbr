@@ -4,11 +4,14 @@ import {
   DotsThreeVertical,
   Heart,
   Warning,
+  PencilSimple,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import ShareMenu from "./ShareMenu";
 import { formatFullDate, formatTimeAgo } from "./format";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/firebase";  // Importando o auth do Firebase
 
 const ReplyCard = ({
   reply,
@@ -20,6 +23,19 @@ const ReplyCard = ({
 }) => {
   const shareRef = useRef(null);
   const menuRef = useRef(null);
+  const [loggedUser, setLoggedUser] = useState(null);
+
+  // Verifica o usuário logado
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setLoggedUser(user.uid); // Define o uid do usuário logado
+      } else {
+        setLoggedUser(null);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -40,7 +56,7 @@ const ReplyCard = ({
   return (
     <div className="reply_card">
       <small className="reply_card_info">
-        <Link href={`/u/${reply.author?.username}`}>
+        <Link href={`/${reply.author?.username}`}>
           {reply.author.username}
         </Link>
         <span>{"•"}</span>
@@ -54,19 +70,24 @@ const ReplyCard = ({
             <DotsThreeVertical />
           </summary>
           <div className="left">
-            <a
-              className="btn danger icon-label"
-              href={`/u/${reply.author.username}/${reply.id}/report`}
-            >
-              Denunciar <Warning />
-            </a>
+            {loggedUser === reply.author.uid ? (
+              <a className="btn icon-label" href={`/${reply.author.username}/reply/${reply.id}/edit`}>
+                Editar <PencilSimple />
+              </a>
+            ) : (
+              <a
+                className="btn danger icon-label"
+                href={`/${reply.author.username}/reply/${reply.id}/report`}
+              >
+                Denunciar <Warning />
+              </a>
+            )}
           </div>
         </details>
       </div>
       <div className="reply_card_content">
-        {inList && <ChatTeardrop />}
         <a
-          href={`/u/${reply.author.username}/${reply.id}`}
+          href={`/${reply.author.username}/reply/${reply.id}`}
           className={`reply_card_content_render ${inList ? "italic" : ""}`}
           dangerouslySetInnerHTML={{ __html: reply.content }}
         />
@@ -91,7 +112,7 @@ const ReplyCard = ({
           side="right"
           ref={shareRef}
           text={`Veja a comentário de ${reply.author.username} no text.dev.br!`}
-          path={`u/${reply.author.username}/${reply.id}`}
+          path={`${reply.author.username}/reply/${reply.id}`}
         />
       </div>
     </div>

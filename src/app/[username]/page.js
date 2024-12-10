@@ -57,7 +57,9 @@ export default function UserPage({ params }) {
   const [description, setDescription] = useState("");
   const [savedPosts, setSavedPosts] = useState(new Set());
   const [likedPosts, setLikedPosts] = useState(new Set());
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "all");
+  const [activeTab, setActiveTab] = useState(
+    searchParams.get("tab") || "published"
+  );
   const [isFollowing, setIsFollowing] = useState(false);
 
   const [userFollowers, setUserFollowers] = useState(0);
@@ -68,8 +70,12 @@ export default function UserPage({ params }) {
   const shareRef = useRef(null);
   const menuRef = useRef(null);
 
+  if (params.username == "settings") {
+    router.push("/settings/profile");
+  }
+
   useEffect(() => {
-    router.replace(`/u/${params.username}?tab=${activeTab}`);
+    router.replace(`/${params.username}?tab=${activeTab}`);
   }, [activeTab, params.username, router]);
 
   useEffect(() => {
@@ -264,7 +270,6 @@ export default function UserPage({ params }) {
         await updateDoc(postDocRef, {
           likes: increment(1),
         });
-        localStorage.setItem("newActivity", true);
         toast.success("Postagem curtida!");
       }
 
@@ -303,7 +308,6 @@ export default function UserPage({ params }) {
         toast.error("Postagem removida dos salvos!");
       } else {
         savedPosts.add(postId);
-        localStorage.setItem("newActivity", true);
         toast.success("Postagem salva!");
       }
 
@@ -450,7 +454,13 @@ export default function UserPage({ params }) {
         <div className="modal">
           <div className="modal_container">
             <div className="modal_header">
-              <h3>{modal.type == "following" ? "Seguindo" : modal.type=="followers"?"Seguidores":"Emblemas"}</h3>
+              <h3>
+                {modal.type == "following"
+                  ? "Seguindo"
+                  : modal.type == "followers"
+                    ? "Seguidores"
+                    : "Emblemas"}
+              </h3>
               <button
                 className="icon"
                 onClick={() => setModal({ isOpen: false, type: "" })}
@@ -464,7 +474,7 @@ export default function UserPage({ params }) {
                   {userFollowing.length > 0 ? (
                     userFollowing.map((u, index) => (
                       <div key={index} className="user-card">
-                        <Link href={`/u/${u.username}`}>
+                        <Link href={`/${u.username}`}>
                           <img
                             src={
                               u.photoURL ||
@@ -482,12 +492,12 @@ export default function UserPage({ params }) {
                     <p>Este usuário não segue ninguém</p>
                   )}
                 </section>
-              ) : modal.type=="followers"?(
+              ) : modal.type == "followers" ? (
                 <section className="user_list">
                   {userFollowers.length > 0 ? (
                     userFollowers.map((u, index) => (
                       <div key={index} className="user-card">
-                        <Link href={`/u/${u.username}`}>
+                        <Link href={`/${u.username}`}>
                           <img
                             src={
                               u.photoURL ||
@@ -505,7 +515,7 @@ export default function UserPage({ params }) {
                     <p>Este usuário não possui seguidores</p>
                   )}
                 </section>
-              ):(
+              ) : (
                 <p>Emblemas</p>
               )}
             </div>
@@ -517,7 +527,7 @@ export default function UserPage({ params }) {
           <div className="alert warning icon">
             <Warning />
             <h4>
-              <a href={`/auth/verify-email/?redirect/u/${params.username}/`}>
+              <a href={`/auth/verify-email/?redirect/${params.username}/`}>
                 Verifique seu email!
               </a>
             </h4>
@@ -543,7 +553,7 @@ export default function UserPage({ params }) {
                 </>
               ) : (
                 <Link
-                  href={`/u/${params.username}/report/`}
+                  href={`/${params.username}/report/`}
                   className="btn icon-label danger"
                 >
                   Denunciar <Warning />
@@ -555,7 +565,7 @@ export default function UserPage({ params }) {
           <ShareMenu
             ref={shareRef}
             text={`Veja o perfil de ${user.username} no text.dev.br!`}
-            path={"u/" + user.username}
+            path={user.username}
             side="left"
           />
         </div>
@@ -706,54 +716,42 @@ export default function UserPage({ params }) {
         </div>
       </section>
       <hr />
-      {isOwnProfile && (
-        <section className="tabs four">
-          <button
-            className={`icon-label ${activeTab === "all" ? "active" : ""}`}
-            onClick={() => setActiveTab("all")}
-          >
-            <Circle />
-            <span>
-              Todos
-              {posts.length > 0 && (
-                <small className="gray">{posts.length}</small>
-              )}
-            </span>
-          </button>
-          <button
-            className={`icon-label ${activeTab === "published" ? "active" : ""}`}
-            onClick={() => setActiveTab("published")}
-          >
-            <CardsThree />
-            <span>
-              Publicados
-              {posts
-                .filter((p) => p.type == "post")
-                .filter((p) => p.isDraft == false).length > 0 && (
-                <small className="gray">
-                  {
-                    posts
-                      .filter((p) => p.type == "post")
-                      .filter((p) => p.isDraft == false).length
-                  }
-                </small>
-              )}
-            </span>
-          </button>
-          <button
-            className={`icon-label ${activeTab === "replies" ? "active" : ""}`}
-            onClick={() => setActiveTab("replies")}
-          >
-            <ChatTeardrop />
-            <span>
-              Comentários
-              {posts.filter((p) => p.type == "reply").length > 0 && (
-                <small className="gray">
-                  {posts.filter((p) => p.type == "reply").length}
-                </small>
-              )}
-            </span>
-          </button>
+      <section className="tabs four">
+        <button
+          className={`icon-label ${activeTab === "published" ? "active" : ""}`}
+          onClick={() => setActiveTab("published")}
+        >
+          <CardsThree />
+          <span>
+            Publicados
+            {posts
+              .filter((p) => p.type == "post")
+              .filter((p) => p.isDraft == false).length > 0 && (
+              <small className="gray">
+                {
+                  posts
+                    .filter((p) => p.type == "post")
+                    .filter((p) => p.isDraft == false).length
+                }
+              </small>
+            )}
+          </span>
+        </button>
+        <button
+          className={`icon-label ${activeTab === "replies" ? "active" : ""}`}
+          onClick={() => setActiveTab("replies")}
+        >
+          <ChatTeardrop />
+          <span>
+            Comentários
+            {posts.filter((p) => p.type == "reply").length > 0 && (
+              <small className="gray">
+                {posts.filter((p) => p.type == "reply").length}
+              </small>
+            )}
+          </span>
+        </button>
+        {isOwnProfile && (
           <button
             className={`icon-label ${activeTab === "drafts" ? "active" : ""}`}
             onClick={() => setActiveTab("drafts")}
@@ -774,8 +772,18 @@ export default function UserPage({ params }) {
               )}
             </span>
           </button>
-        </section>
-      )}
+        )}
+        <button
+          className={`icon-label ${activeTab === "all" ? "active" : ""}`}
+          onClick={() => setActiveTab("all")}
+        >
+          <Circle />
+          <span>
+            Todos
+            {posts.length > 0 && <small className="gray">{posts.length}</small>}
+          </span>
+        </button>
+      </section>
       <section className="list">{renderPosts(posts)}</section>
     </>
   );

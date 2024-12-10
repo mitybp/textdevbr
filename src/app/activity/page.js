@@ -25,7 +25,8 @@ export default function Activity({ searchParams }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem("newActivity", false);
+    document.title = "Atividade - text.dev.br";
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         await fetchUserActivity(user.uid);
@@ -135,7 +136,6 @@ export default function Activity({ searchParams }) {
         await updateDoc(postDocRef, {
           likes: increment(1),
         });
-        localStorage.setItem("newActivity", true);
         toast.success("Postagem curtida!");
       }
 
@@ -174,7 +174,6 @@ export default function Activity({ searchParams }) {
         toast.error("Postagem removida dos salvos!");
       } else {
         savedPosts.add(postId);
-        localStorage.setItem("newActivity", true);
         toast.success("Postagem salva!");
       }
 

@@ -126,7 +126,7 @@ const New = () => {
       toast.success(
         isDraft ? "Rascunho salvo com sucesso!" : "Postagem criada com sucesso!"
       );
-      router.push(`/u/${user.username}/${newPost.path}`);
+      router.push(`/${user.username}/${newPost.path}`);
     } catch (error) {
       console.error("Erro ao criar a postagem:", error);
       toast.error("Erro ao criar a postagem.");
@@ -136,13 +136,17 @@ const New = () => {
   const strFormat = (str) => {
     return str
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/\s+/g, "-")
+      .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+      .replace(/\s+/g, "-") // Substitui espaços por hífens
       .toLowerCase()
-      .replace(/[?!°,.#]/g, "")
-      .replace(/--+/g, "-");
+      .replace(/[?!°,.#;_]/g, "") // Remove caracteres especiais indesejados
+      .replace(/--+/g, "-") // Substitui múltiplos hífens por um único hífen
+      .replace(/\.\.+/g, "-") // Substitui múltiplos pontos por um hífen
+      .replace(/__+/g, "-") // Substitui múltiplos underlines por um hífen
+      .replace(/[^\x00-\x7F]/g, "") // Remove caracteres não-ASCII (como emojis)
+      .replace(":", "-"); // Substitui dois-pontos por hífen
   };
-
+  
   return (
     <>
       <h1>Nova postagem</h1>
